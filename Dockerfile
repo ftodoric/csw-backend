@@ -1,17 +1,14 @@
 FROM node:18-alpine
 
-LABEL name="hesoyam" maintainer="ftodoric"
+LABEL name="Cyber Warfare Backend" maintainer="Filip Todorić <ft50626@fer.hr>"
 
-ENV NODE_ENV=production
 ENV NODEJS_VERSION=18
 ENV DATABASE_URL=postgres://postgres:postgres
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY package.json ./
-COPY yarn.lock ./
-
-RUN npm install --production
+COPY package*.json ./
+RUN npm install
 
 COPY . .
 
