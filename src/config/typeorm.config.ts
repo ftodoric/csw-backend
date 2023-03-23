@@ -9,6 +9,6 @@ export const typeOrmConfig = (
     configService.get('NODE_ENV') === 'test'
       ? configService.get('TEST_DATABASE_URL')
       : configService.get('DATABASE_URL'),
-  synchronize: true,
   autoLoadEntities: true,
+  synchronize: true,
 });

@@ -22,8 +22,15 @@ export class GamesRepository extends Repository<Game> {
     } catch (error) {
       // Duplicate game
       if (error.code === '23505')
-        throw new ConflictException('Username already exists.');
+        throw new ConflictException('A game with that name already exists.');
       else throw new InternalServerErrorException();
     }
+  }
+
+  async getGames(): Promise<Game[]> {
+    const query = this.createQueryBuilder('game');
+
+    const games = await query.getMany();
+    return games;
   }
 }
