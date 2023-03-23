@@ -20,8 +20,8 @@ import { jwtConfigOptions } from 'src/config/jwt.config';
     }),
     TypeOrmModule.forFeature([User]),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, UsersRepository, JwtStrategy],
   exports: [JwtStrategy, PassportModule],
+  providers: [AuthService, UsersRepository, JwtStrategy],
+  controllers: [AuthController],
 })
 export class AuthModule {}

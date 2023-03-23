@@ -3,7 +3,7 @@ FROM node:18-alpine
 LABEL name="Cyber Warfare Backend" maintainer="Filip Todorić <ft50626@fer.hr>"
 
 ENV NODEJS_VERSION=18
-ENV DATABASE_URL=postgres://postgres:postgres
+# set env database_url for prod deploy
 
 WORKDIR /app
 
