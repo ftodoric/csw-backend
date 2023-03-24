@@ -1,25 +1,25 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-export class Game {
+export class Team {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  ownerId: string;
-
-  @Column({ unique: true })
-  name: string;
+  side: string;
 
   @Column()
-  description: string;
+  governmentId: string;
 
   @Column()
-  status: string;
+  bussinesId: string;
 
   @Column()
-  blueTeamId: string;
+  populationId: string;
 
   @Column()
-  redTeamId: string;
+  militaryId: string;
+
+  @Column()
+  energyId: string;
 }
