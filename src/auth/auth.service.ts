@@ -6,6 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { UnauthorizedException } from '@nestjs/common/exceptions/unauthorized.exception';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './jwt-payload.interface';
+import { User } from './user.entity';
+import { PublicProfileDto } from './dto/public-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -31,5 +33,9 @@ export class AuthService {
       const accessToken = await this.jwtService.sign(payload);
       return { accessToken };
     } else throw new UnauthorizedException('Wrong authentication credentials');
+  }
+
+  async getAllusers(): Promise<PublicProfileDto[]> {
+    return this.userRepository.getAllUsers();
   }
 }

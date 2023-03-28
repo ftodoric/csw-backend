@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
+import { PublicProfileDto } from './dto/public-user.dto';
 import { User } from './user.entity';
 
 @Controller('auth')
@@ -27,7 +28,7 @@ export class AuthController {
 
   @Get('/users')
   @UseGuards(AuthGuard())
-  async getAllUsers(): Promise<User[]> {
-    return [];
+  async getAllUsers(): Promise<PublicProfileDto[]> {
+    return this.authService.getAllusers();
   }
 }

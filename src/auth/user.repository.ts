@@ -7,6 +7,7 @@ import { DataSource, Repository } from 'typeorm';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
+import { PublicProfileDto } from './dto/public-user.dto';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -30,5 +31,17 @@ export class UserRepository extends Repository<User> {
         throw new ConflictException('Username already exists.');
       else throw new InternalServerErrorException();
     }
+  }
+
+  async getAllUsers(): Promise<PublicProfileDto[]> {
+    const query = this.createQueryBuilder('users');
+    const users: User[] = await query.getMany();
+
+    const publicUsers = users.map((user) => {
+      const reducedUser = PublicProfileDto.fromUserEntity(user);
+      return reducedUser;
+    });
+
+    return publicUsers;
   }
 }
