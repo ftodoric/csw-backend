@@ -1,7 +1,9 @@
-import { Controller, Post, Body, Res } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
+import { User } from './user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -16,10 +18,16 @@ export class AuthController {
   async logIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ msg: string }> {
+  ): Promise<{ accessToken: string }> {
     const token = await this.authService.logIn(authCredentialsDto);
 
     res.cookie('jwt', token, { httpOnly: true });
-    return { msg: 'success' };
+    return token;
+  }
+
+  @Get('/users')
+  @UseGuards(AuthGuard())
+  async getAllUsers(): Promise<User[]> {
+    return [];
   }
 }
