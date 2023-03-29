@@ -1,10 +1,11 @@
 import { Controller, Post, Body, Res, Get, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { PublicProfileDto } from './dto/public-user.dto';
-import { User } from './user.entity';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { User } from './user.decorator';
+import { User as UserEntity } from './user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -26,8 +27,14 @@ export class AuthController {
     return token;
   }
 
+  @Get('/me')
+  @UseGuards(JwtAuthGuard)
+  async getCurrentUser(@User() user: UserEntity): Promise<UserEntity> {
+    return user;
+  }
+
   @Get('/users')
-  @UseGuards(AuthGuard())
+  @UseGuards(JwtAuthGuard)
   async getAllUsers(): Promise<PublicProfileDto[]> {
     return this.authService.getAllusers();
   }

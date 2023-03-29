@@ -1,5 +1,12 @@
 import { IsOptional } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Team } from 'src/teams/team.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class Game {
@@ -9,9 +16,6 @@ export class Game {
   @Column()
   ownerId: string;
 
-  @Column({ unique: true })
-  name: string;
-
   @IsOptional()
   @Column()
   description: string;
@@ -19,9 +23,11 @@ export class Game {
   @Column()
   status: string;
 
-  @Column()
-  blueTeamId: string;
+  @OneToOne(() => Team, (team) => team.id)
+  @JoinColumn()
+  blueTeam: Team;
 
-  @Column()
-  redTeamId: string;
+  @OneToOne(() => Team, (team) => team.id)
+  @JoinColumn()
+  redTeam: Team;
 }

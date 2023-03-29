@@ -37,11 +37,8 @@ export class UserRepository extends Repository<User> {
     const query = this.createQueryBuilder('users');
     const users: User[] = await query.getMany();
 
-    const publicUsers = users.map((user) => {
-      const reducedUser = PublicProfileDto.fromUserEntity(user);
-      return reducedUser;
+    return users.map((user) => {
+      return PublicProfileDto.fromUserEntity(user);
     });
-
-    return publicUsers;
   }
 }

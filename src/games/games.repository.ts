@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { User } from 'src/auth/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { GameDto } from './dto/game.dto';
 import { Game } from './game.entity';
@@ -13,10 +14,8 @@ export class GamesRepository extends Repository<Game> {
     super(Game, dataSource.createEntityManager());
   }
 
-  async createGame(gameDto: GameDto): Promise<void> {
-    const { name } = gameDto;
-
-    const game = this.create({ name });
+  async createGame(gameDto: GameDto): Promise<string> {
+    const game = this.create(gameDto);
     try {
       await this.save(game);
     } catch (error) {
@@ -25,12 +24,16 @@ export class GamesRepository extends Repository<Game> {
         throw new ConflictException('A game with that name already exists.');
       else throw new InternalServerErrorException();
     }
+
+    return game.id;
   }
 
-  async getGames(): Promise<Game[]> {
-    const query = this.createQueryBuilder('game');
+  async getGames(user: User): Promise<Game[]> {
+    const query = this.createQueryBuilder('game')
+      .innerJoinAndSelect('game.blueTeam', 'blueTeam')
+      .innerJoinAndSelect('game.redTeam', 'redTeam');
 
-    const games = await query.getMany();
-    return games;
+    // const games = await query.where('TEAM.govPlayerId = user.id');
+    return query.getMany();
   }
 }
