@@ -5,7 +5,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint/eslint-plugin'],
+  plugins: ['@typescript-eslint/eslint-plugin', 'eslint-plugin-import'],
   extends: ['plugin:@typescript-eslint/recommended'],
   root: true,
   env: {
@@ -17,5 +17,20 @@ module.exports = {
     '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
+    'import/order': [
+      'warn',
+      {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          ['parent', 'sibling', 'index'],
+        ],
+        'newlines-between': 'always',
+        pathGroups: [{ pattern: '@nestjs/*', group: 'builtin' }],
+        alphabetize: { order: 'asc', caseInsensitive: true },
+        pathGroupsExcludedImportTypes: ['builtin'],
+      },
+    ],
   },
 }
