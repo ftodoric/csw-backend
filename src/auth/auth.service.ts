@@ -6,7 +6,6 @@ import * as bcrypt from 'bcrypt';
 import { UnauthorizedException } from '@nestjs/common/exceptions/unauthorized.exception';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './jwt-payload.interface';
-import { User } from './user.entity';
 import { PublicProfileDto } from './dto/public-user.dto';
 
 @Injectable()
