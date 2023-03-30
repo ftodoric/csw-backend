@@ -1,34 +1,34 @@
-import { IsOptional } from 'class-validator';
-import { Team } from 'src/teams/team.entity';
+import { IsOptional } from 'class-validator'
+import { Team } from 'src/teams/team.entity'
 import {
   Column,
   Entity,
   JoinColumn,
   OneToOne,
   PrimaryGeneratedColumn,
-} from 'typeorm';
-import { GameStatus } from './game-status.enum';
+} from 'typeorm'
+import { GameStatus } from './game-status.enum'
 
 @Entity()
 export class Game {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: string
 
   @Column()
-  ownerId: string;
+  ownerId: string
 
   @OneToOne(() => Team, (team) => team.id)
   @JoinColumn()
-  blueTeam: Team;
+  blueTeam: Team
 
   @OneToOne(() => Team, (team) => team.id)
   @JoinColumn()
-  redTeam: Team;
+  redTeam: Team
 
   @Column()
-  status: GameStatus;
+  status: GameStatus
 
   @Column()
   @IsOptional()
-  description: string;
+  description: string
 }

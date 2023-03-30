@@ -1,62 +1,62 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator'
 
-const teamNameRequirement = 'Team name is required.';
+const teamNameRequirement = 'Team name is required.'
 const playerEntityAssignmentRequirement =
-  'A player must be assigned to every Entity.';
+  'A player must be assigned to every Entity.'
 
 export class CreateGameDto {
   // Blue Team
   @IsString()
   @MinLength(1, { message: teamNameRequirement })
-  blueTeamName: string;
+  blueTeamName: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  electoratePlayer: string;
+  electoratePlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  ukPlcPlayer: string;
+  ukPlcPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  ukGovernmentPlayer: string;
+  ukGovernmentPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  ukEnergyPlayer: string;
+  ukEnergyPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  gchqPlayer: string;
+  gchqPlayer: string
 
   // Red Team
   @IsString()
   @MinLength(1, { message: teamNameRequirement })
-  redTeamName: string;
+  redTeamName: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  onlineTrollsPlayer: string;
+  onlineTrollsPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  energeticBearPlayer: string;
+  energeticBearPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  russianGovernmentPlayer: string;
+  russianGovernmentPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  rosenergoatomPlayer: string;
+  rosenergoatomPlayer: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  scsPlayer: string;
+  scsPlayer: string
 
   // Description
   @IsString()
   @IsOptional()
-  description: string;
+  description: string
 }

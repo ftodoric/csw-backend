@@ -1,11 +1,11 @@
-import { User } from '../user.entity';
+import { User } from '../user.entity'
 
 export class PublicProfileDto {
-  username: string;
+  username: string
 
   static fromUserEntity(user: User) {
-    const profile = new PublicProfileDto();
-    profile.username = user.username;
-    return profile;
+    const profile = new PublicProfileDto()
+    profile.username = user.username
+    return profile
   }
 }

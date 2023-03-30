@@ -1,25 +1,25 @@
-import { IsEnum, IsString } from 'class-validator';
-import { TeamSide } from '../team-side.enum';
+import { IsEnum, IsString } from 'class-validator'
+import { TeamSide } from '../team-side.enum'
 
 export class TeamDto {
   @IsEnum(TeamSide)
-  side: TeamSide;
+  side: TeamSide
 
   @IsString()
-  name: string;
+  name: string
 
   @IsString()
-  peoplePlayerId: string;
+  peoplePlayerId: string
 
   @IsString()
-  industryPlayerId: string;
+  industryPlayerId: string
 
   @IsString()
-  governmentPlayerId: string;
+  governmentPlayerId: string
 
   @IsString()
-  energyPlayerId: string;
+  energyPlayerId: string
 
   @IsString()
-  intelligencePlayerId: string;
+  intelligencePlayerId: string
 }

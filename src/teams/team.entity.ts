@@ -1,33 +1,33 @@
-import { Game } from 'src/games/game.entity';
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { TeamSide } from './team-side.enum';
+import { Game } from 'src/games/game.entity'
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { TeamSide } from './team-side.enum'
 
 @Entity()
 export class Team {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: string
 
   @Column()
-  side: TeamSide;
+  side: TeamSide
 
   @Column()
-  name: string;
+  name: string
 
   @Column()
-  peoplePlayerId: string;
+  peoplePlayerId: string
 
   @Column()
-  industryPlayerId: string;
+  industryPlayerId: string
 
   @Column()
-  governmentPlayerId: string;
+  governmentPlayerId: string
 
   @Column()
-  energyPlayerId: string;
+  energyPlayerId: string
 
   @Column()
-  intelligencePlayerId: string;
+  intelligencePlayerId: string
 
   @OneToOne(() => Game)
-  game: Game;
+  game: Game
 }
