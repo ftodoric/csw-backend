@@ -6,10 +6,6 @@ import { CreateGameDto } from './dto/create-game.dto'
 import { Game } from './game.entity'
 import { GamesService } from './games.service'
 
-const nesto = () => {
-  return 2
-}
-
 @Controller('games')
 @UseGuards(JwtAuthGuard)
 export class GamesController {
