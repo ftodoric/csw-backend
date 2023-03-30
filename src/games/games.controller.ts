@@ -12,7 +12,10 @@ export class GamesController {
   constructor(private gamesService: GamesService) {}
 
   @Post()
-  createNewGame(@Body() gameDto: CreateGameDto, @User() user: UserEntity) {
+  createNewGame(
+    @Body() gameDto: CreateGameDto,
+    @User() user: UserEntity,
+  ): Promise<string> {
     return this.gamesService.createGame(gameDto, user);
   }
 

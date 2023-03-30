@@ -17,7 +17,7 @@ export class GamesService {
     @InjectRepository(UserRepository) private userRepository: UserRepository,
   ) {}
 
-  async createGame(gameDto: CreateGameDto, user: User): Promise<void> {
+  async createGame(gameDto: CreateGameDto, user: User): Promise<string> {
     const electoratePlayer = await this.userRepository.findOneBy({
       username: gameDto.electoratePlayer,
     });
@@ -71,7 +71,7 @@ export class GamesService {
     });
 
     // Create a game with both sides
-    await this.gamesRepository.createGame({
+    return await this.gamesRepository.createGame({
       ownerId: user.id,
       blueTeam: blueTeam,
       redTeam: redTeam,
