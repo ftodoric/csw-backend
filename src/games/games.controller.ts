@@ -6,7 +6,7 @@ import { CreateGameDto } from './dto/create-game.dto'
 import { Game } from './game.entity'
 import { GamesService } from './games.service'
 
-const test = () => {
+const test = (nesto) => {
   return 2
 }
 
