@@ -1,22 +1,21 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
 import { Team } from 'src/teams/team.entity';
+import { GameStatus } from '../game-status.enum';
 
 export class GameDto {
   @IsString()
   ownerId: string;
 
-  @IsString()
-  status: string;
+  @IsObject()
+  blueTeam: Team;
+
+  @IsObject()
+  redTeam: Team;
+
+  @IsEnum(GameStatus)
+  status: GameStatus;
 
   @IsString()
   @IsOptional()
   description: string;
-
-  @IsString()
-  @MinLength(1)
-  blueTeam: Team;
-
-  @IsString()
-  @MinLength(1)
-  redTeam: Team;
 }

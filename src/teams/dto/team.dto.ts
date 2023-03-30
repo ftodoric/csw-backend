@@ -1,27 +1,25 @@
-import { IsString, MinLength } from 'class-validator';
-import { SideEnum } from '../team.interface';
+import { IsEnum, IsString } from 'class-validator';
+import { TeamSide } from '../team-side.enum';
 
 export class TeamDto {
+  @IsEnum(TeamSide)
+  side: TeamSide;
+
   @IsString()
-  @MinLength(1)
   name: string;
 
   @IsString()
-  @MinLength(1)
-  side: SideEnum;
+  peoplePlayerId: string;
 
   @IsString()
-  govPlayerId: string;
+  industryPlayerId: string;
 
   @IsString()
-  busPlayerId: string;
+  governmentPlayerId: string;
 
   @IsString()
-  popPlayerId: string;
+  energyPlayerId: string;
 
   @IsString()
-  milPlayerId: string;
-
-  @IsString()
-  enePlayerId: string;
+  intelligencePlayerId: string;
 }

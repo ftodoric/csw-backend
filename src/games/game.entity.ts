@@ -7,6 +7,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { GameStatus } from './game-status.enum';
 
 @Entity()
 export class Game {
@@ -16,13 +17,6 @@ export class Game {
   @Column()
   ownerId: string;
 
-  @IsOptional()
-  @Column()
-  description: string;
-
-  @Column()
-  status: string;
-
   @OneToOne(() => Team, (team) => team.id)
   @JoinColumn()
   blueTeam: Team;
@@ -30,4 +24,11 @@ export class Game {
   @OneToOne(() => Team, (team) => team.id)
   @JoinColumn()
   redTeam: Team;
+
+  @Column()
+  status: GameStatus;
+
+  @Column()
+  @IsOptional()
+  description: string;
 }

@@ -1,6 +1,6 @@
 import { Game } from 'src/games/game.entity';
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { SideEnum } from './team.interface';
+import { TeamSide } from './team-side.enum';
 
 @Entity()
 export class Team {
@@ -8,26 +8,26 @@ export class Team {
   id: string;
 
   @Column()
-  side: SideEnum;
+  side: TeamSide;
 
   @Column()
   name: string;
 
   @Column()
-  govPlayerId: string;
+  peoplePlayerId: string;
 
   @Column()
-  busPlayerId: string;
+  industryPlayerId: string;
 
   @Column()
-  popPlayerId: string;
+  governmentPlayerId: string;
 
   @Column()
-  milPlayerId: string;
+  energyPlayerId: string;
 
   @Column()
-  enePlayerId: string;
+  intelligencePlayerId: string;
 
-  @OneToOne(() => Game, { eager: false })
+  @OneToOne(() => Game)
   game: Game;
 }

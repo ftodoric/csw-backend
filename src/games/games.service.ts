@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/auth/user.entity';
 import { UserRepository } from 'src/auth/user.repository';
-import { SideEnum } from 'src/teams/team.interface';
+import { TeamSide } from 'src/teams/team-side.enum';
 import { TeamsRepository } from 'src/teams/teams.repository';
 import { CreateGameDto } from './dto/create-game.dto';
+import { GameStatus } from './game-status.enum';
 import { Game } from './game.entity';
 import { GamesRepository } from './games.repository';
 
@@ -17,65 +18,65 @@ export class GamesService {
   ) {}
 
   async createGame(gameDto: CreateGameDto, user: User): Promise<void> {
-    const blueGovPlayer = await this.userRepository.findOneBy({
-      username: gameDto.blueGovernmentPlayer,
+    const electoratePlayer = await this.userRepository.findOneBy({
+      username: gameDto.electoratePlayer,
     });
     const ukPlcPlayer = await this.userRepository.findOneBy({
       username: gameDto.ukPlcPlayer,
     });
-    const electoratePlayer = await this.userRepository.findOneBy({
-      username: gameDto.electoratePlayer,
+    const ukGovernmentPlayer = await this.userRepository.findOneBy({
+      username: gameDto.ukGovernmentPlayer,
+    });
+    const ukEnergyPlayer = await this.userRepository.findOneBy({
+      username: gameDto.ukEnergyPlayer,
     });
     const gchqPlayer = await this.userRepository.findOneBy({
       username: gameDto.gchqPlayer,
     });
-    const ukEnergyPlayer = await this.userRepository.findOneBy({
-      username: gameDto.gchqPlayer,
-    });
-    const redGovernmentPlayer = await this.userRepository.findOneBy({
-      username: gameDto.gchqPlayer,
+    const onlineTrollsPlayer = await this.userRepository.findOneBy({
+      username: gameDto.onlineTrollsPlayer,
     });
     const energeticBearPlayer = await this.userRepository.findOneBy({
-      username: gameDto.gchqPlayer,
+      username: gameDto.energeticBearPlayer,
     });
-    const onlineTrollsPlayer = await this.userRepository.findOneBy({
-      username: gameDto.gchqPlayer,
-    });
-    const scsPlayer = await this.userRepository.findOneBy({
-      username: gameDto.gchqPlayer,
+    const russianGovernmentPlayer = await this.userRepository.findOneBy({
+      username: gameDto.russianGovernmentPlayer,
     });
     const rosenergoatomPlayer = await this.userRepository.findOneBy({
-      username: gameDto.gchqPlayer,
+      username: gameDto.rosenergoatomPlayer,
+    });
+    const scsPlayer = await this.userRepository.findOneBy({
+      username: gameDto.scsPlayer,
     });
 
-    // Create two teams and assign players
+    // Create two teams and assign players to each team entity
     const blueTeam = await this.teamsRepository.createTeam({
+      side: TeamSide.Blue,
       name: gameDto.blueTeamName,
-      side: SideEnum.Blue,
-      govPlayerId: blueGovPlayer.id,
-      busPlayerId: ukPlcPlayer.id,
-      popPlayerId: electoratePlayer.id,
-      milPlayerId: gchqPlayer.id,
-      enePlayerId: ukEnergyPlayer.id,
+      peoplePlayerId: electoratePlayer.id,
+      industryPlayerId: ukPlcPlayer.id,
+      governmentPlayerId: ukGovernmentPlayer.id,
+      energyPlayerId: ukEnergyPlayer.id,
+      intelligencePlayerId: gchqPlayer.id,
     });
 
     const redTeam = await this.teamsRepository.createTeam({
+      side: TeamSide.Red,
       name: gameDto.redTeamName,
-      side: SideEnum.Red,
-      govPlayerId: redGovernmentPlayer.id,
-      busPlayerId: energeticBearPlayer.id,
-      popPlayerId: onlineTrollsPlayer.id,
-      milPlayerId: scsPlayer.id,
-      enePlayerId: rosenergoatomPlayer.id,
+      peoplePlayerId: onlineTrollsPlayer.id,
+      industryPlayerId: energeticBearPlayer.id,
+      governmentPlayerId: russianGovernmentPlayer.id,
+      energyPlayerId: rosenergoatomPlayer.id,
+      intelligencePlayerId: scsPlayer.id,
     });
-    // Create a game with ids of the blue and red team
 
+    // Create a game with both sides
     await this.gamesRepository.createGame({
       ownerId: user.id,
-      description: gameDto.description,
-      status: 'IN_PROGRESS',
       blueTeam: blueTeam,
       redTeam: redTeam,
+      status: GameStatus.NotStarted,
+      description: gameDto.description,
     });
   }
 
