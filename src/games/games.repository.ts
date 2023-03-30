@@ -32,10 +32,22 @@ export class GamesRepository extends Repository<Game> {
 
   async getGames(user: User): Promise<Game[]> {
     const query = this.createQueryBuilder('game')
-      .innerJoinAndSelect('game.blueTeam', 'blueTeam')
-      .innerJoinAndSelect('game.redTeam', 'redTeam')
-
-    // const games = await query.where('TEAM.govPlayerId = user.id');
+      .select('game.status')
+      .addSelect('game.description')
+      .addSelect('blueTeam.name')
+      .addSelect('redTeam.name')
+      .innerJoin('game.blueTeam', 'blueTeam')
+      .innerJoin('game.redTeam', 'redTeam')
+      .where('blueTeam.peoplePlayerId = :id', { id: user.id })
+      .orWhere('blueTeam.industryPlayerId = :id', { id: user.id })
+      .orWhere('blueTeam.governmentPlayerId = :id', { id: user.id })
+      .orWhere('blueTeam.energyPlayerId = :id', { id: user.id })
+      .orWhere('blueTeam.intelligencePlayerId = :id', { id: user.id })
+      .orWhere('redTeam.peoplePlayerId = :id', { id: user.id })
+      .orWhere('redTeam.industryPlayerId = :id', { id: user.id })
+      .orWhere('redTeam.governmentPlayerId = :id', { id: user.id })
+      .orWhere('redTeam.energyPlayerId = :id', { id: user.id })
+      .orWhere('redTeam.intelligencePlayerId = :id', { id: user.id })
     return query.getMany()
   }
 }
