@@ -1,19 +1,14 @@
 import { IsOptional } from 'class-validator'
+import { nanoid } from 'nanoid'
 import { Team } from 'src/teams/team.entity'
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm'
+import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm'
 
 import { GameStatus } from './game-status.enum'
 
 @Entity()
 export class Game {
-  @PrimaryGeneratedColumn('uuid')
-  id: string
+  @PrimaryColumn()
+  id: string = nanoid(5)
 
   @Column()
   ownerId: string
