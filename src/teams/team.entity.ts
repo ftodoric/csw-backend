@@ -1,5 +1,6 @@
 import { Game } from 'src/games/game.entity'
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+
 import { TeamSide } from './team-side.enum'
 
 @Entity()

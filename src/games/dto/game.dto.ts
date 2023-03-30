@@ -1,5 +1,6 @@
 import { IsEnum, IsObject, IsOptional, IsString } from 'class-validator'
 import { Team } from 'src/teams/team.entity'
+
 import { GameStatus } from '../game-status.enum'
 
 export class GameDto {

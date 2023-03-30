@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { User } from 'src/auth/user.decorator'
 import { User as UserEntity } from 'src/auth/user.entity'
+
 import { CreateGameDto } from './dto/create-game.dto'
 import { Game } from './game.entity'
 import { GamesService } from './games.service'

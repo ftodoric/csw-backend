@@ -1,4 +1,5 @@
 import { IsEnum, IsString } from 'class-validator'
+
 import { TeamSide } from '../team-side.enum'
 
 export class TeamDto {
