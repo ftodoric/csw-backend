@@ -1,4 +1,3 @@
-import { IsOptional } from 'class-validator'
 import { nanoid } from 'nanoid'
 import { Team } from 'src/teams/team.entity'
 import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm'
@@ -24,7 +23,6 @@ export class Game {
   @Column()
   status: GameStatus
 
-  @Column()
-  @IsOptional()
+  @Column({ nullable: true })
   description: string
 }

@@ -23,7 +23,7 @@ export class GamesRepository extends Repository<Game> {
     } catch (error) {
       // Duplicate game
       if (error.code === '23505')
-        throw new ConflictException('A game with that name already exists.')
+        throw new ConflictException('A game with that id already exists.')
       else throw new InternalServerErrorException()
     }
 
