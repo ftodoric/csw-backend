@@ -19,4 +19,8 @@ export class GameDto {
   @IsString()
   @IsOptional()
   description: string
+
+  @IsObject()
+  @IsOptional()
+  winner: Team
 }

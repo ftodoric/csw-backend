@@ -25,4 +25,8 @@ export class Game {
 
   @Column({ nullable: true })
   description: string
+
+  @OneToOne(() => Team, (team) => team.id, { nullable: true })
+  @JoinColumn()
+  winner: Team
 }
