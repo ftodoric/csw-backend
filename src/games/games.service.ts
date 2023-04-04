@@ -79,6 +79,7 @@ export class GamesService {
       redTeam: redTeam,
       status: GameStatus.NotStarted,
       description: gameDto.description,
+      winner: undefined,
     })
   }
 
