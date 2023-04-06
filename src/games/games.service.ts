@@ -86,4 +86,8 @@ export class GamesService {
   async getGames(user: User): Promise<Game[]> {
     return this.gamesRepository.getGames(user)
   }
+
+  async getGameById(id: string): Promise<Game> {
+    return this.gamesRepository.getGameById(id)
+  }
 }

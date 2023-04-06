@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
 import { User } from 'src/auth/user.decorator'
@@ -24,5 +24,15 @@ export class GamesController {
   @Get()
   getGames(@User() user): Promise<Game[]> {
     return this.gamesService.getGames(user)
+  }
+
+  @Get('/:id')
+  getGameById(@Param('id') id): Promise<Game> {
+    console.log(
+      '%clog | description\n',
+      'color: #0e8dbf; margin-bottom: 5px;',
+      id
+    )
+    return this.gamesService.getGameById(id)
   }
 }

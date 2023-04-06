@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common'
 
 import { User } from 'src/auth/user.entity'
@@ -32,11 +33,13 @@ export class GamesRepository extends Repository<Game> {
 
   async getGames(user: User): Promise<Game[]> {
     const query = this.createQueryBuilder('game')
-      .select('game.status')
+      .select('game.id')
+      .addSelect('game.status')
       .addSelect('game.description')
       .addSelect('winner.name')
       .addSelect('blueTeam.name')
       .addSelect('redTeam.name')
+      .addSelect('game.ownerId')
       .innerJoin('game.blueTeam', 'blueTeam')
       .innerJoin('game.redTeam', 'redTeam')
       .leftJoin('game.winner', 'winner')
@@ -51,5 +54,18 @@ export class GamesRepository extends Repository<Game> {
       .orWhere('redTeam.energyPlayerId = :id', { id: user.id })
       .orWhere('redTeam.intelligencePlayerId = :id', { id: user.id })
     return query.getMany()
+  }
+
+  async getGameById(id: string): Promise<Game> {
+    console.log(
+      '%clog | description\n',
+      'color: #0e8dbf; margin-bottom: 5px;',
+      id
+    )
+    const game = await this.findOneBy({ id: id })
+
+    if (!game) throw new NotFoundException(`Game with ID ${id} not found.`)
+
+    return game
   }
 }

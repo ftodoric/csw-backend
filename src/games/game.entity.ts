@@ -1,22 +1,27 @@
-import { nanoid } from 'nanoid'
 import { Team } from 'src/teams/team.entity'
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm'
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm'
 
 import { GameStatus } from './game-status.enum'
 
 @Entity()
 export class Game {
-  @PrimaryColumn()
-  id: string = nanoid(5)
+  @PrimaryGeneratedColumn('uuid')
+  id: string
 
   @Column()
   ownerId: string
 
-  @OneToOne(() => Team, (team) => team.id)
+  @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()
   blueTeam: Team
 
-  @OneToOne(() => Team, (team) => team.id)
+  @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()
   redTeam: Team
 
