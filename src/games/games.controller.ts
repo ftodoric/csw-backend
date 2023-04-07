@@ -28,11 +28,6 @@ export class GamesController {
 
   @Get('/:id')
   getGameById(@Param('id') id): Promise<Game> {
-    console.log(
-      '%clog | description\n',
-      'color: #0e8dbf; margin-bottom: 5px;',
-      id
-    )
     return this.gamesService.getGameById(id)
   }
 }

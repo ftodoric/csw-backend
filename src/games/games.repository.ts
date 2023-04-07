@@ -57,11 +57,6 @@ export class GamesRepository extends Repository<Game> {
   }
 
   async getGameById(id: string): Promise<Game> {
-    console.log(
-      '%clog | description\n',
-      'color: #0e8dbf; margin-bottom: 5px;',
-      id
-    )
     const game = await this.findOneBy({ id: id })
 
     if (!game) throw new NotFoundException(`Game with ID ${id} not found.`)
