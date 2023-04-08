@@ -18,8 +18,8 @@ import { TeamsModule } from './teams/teams.module'
         typeOrmConfig(configService),
     }),
     AuthModule,
-    GamesModule,
     TeamsModule,
+    GamesModule,
   ],
 })
 export class AppModule {}

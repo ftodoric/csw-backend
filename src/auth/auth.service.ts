@@ -33,7 +33,7 @@ export class AuthService {
       const payload: JwtPayload = { username }
       const accessToken = await this.jwtService.sign(payload)
       return { accessToken }
-    } else throw new UnauthorizedException('Wrong authentication credentials')
+    } else throw new UnauthorizedException('Wrong authentication credentials.')
   }
 
   async getAllusers(): Promise<PublicProfileDto[]> {

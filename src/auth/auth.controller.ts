@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Res, Get, UseGuards } from '@nestjs/common'
 
+import { instanceToPlain } from 'class-transformer'
 import { Response } from 'express'
 
 import { AuthService } from './auth.service'
@@ -39,7 +40,7 @@ export class AuthController {
   @Get('/me')
   @UseGuards(JwtAuthGuard)
   async getCurrentUser(@User() user: UserEntity): Promise<UserEntity> {
-    return user
+    return instanceToPlain(user) as UserEntity
   }
 
   @Get('/users')
