@@ -14,7 +14,7 @@ export class GamesController {
   constructor(private gamesService: GamesService) {}
 
   @Post()
-  createNewGame(
+  createGame(
     @Body() gameDto: CreateGameDto,
     @User() user: UserEntity
   ): Promise<string> {
@@ -22,7 +22,7 @@ export class GamesController {
   }
 
   @Get()
-  getGames(@User() user): Promise<Game[]> {
+  getMyGames(@User() user): Promise<Game[]> {
     return this.gamesService.getGames(user)
   }
 

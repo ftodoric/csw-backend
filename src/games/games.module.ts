@@ -14,12 +14,12 @@ import { GamesService } from './games.service'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Game]),
     AuthModule,
-    TypeOrmModule.forFeature([Team]),
     TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([Team]),
+    TypeOrmModule.forFeature([Game]),
   ],
-  providers: [GamesService, GamesRepository, TeamsRepository, UserRepository],
+  providers: [UserRepository, TeamsRepository, GamesService, GamesRepository],
   controllers: [GamesController],
 })
 export class GamesModule {}

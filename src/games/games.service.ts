@@ -7,6 +7,7 @@ import { TeamSide } from 'src/teams/team-side.enum'
 import { TeamsRepository } from 'src/teams/teams.repository'
 
 import { CreateGameDto } from './dto/create-game.dto'
+import { GameDto } from './dto/game.dto'
 import { GameStatus } from './game-status.enum'
 import { Game } from './game.entity'
 import { GamesRepository } from './games.repository'
@@ -79,7 +80,6 @@ export class GamesService {
       redTeam: redTeam,
       status: GameStatus.NotStarted,
       description: gameDto.description,
-      winner: undefined,
     })
   }
 
