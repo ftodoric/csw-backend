@@ -1,22 +1,22 @@
 version: '3.9'
 
 services:
-  cyber-warfare-database:
-    container_name: cyber-warfare-database
+  csw-database:
+    container_name: csw-database
     image: postgres:14.2-alpine
     ports:
       - '5432:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cyber-warfare-database
+      POSTGRES_DB: csw-database
 
-  cyber-warfare-backend:
-    container_name: cyber-warfare-backend
+  csw-backend:
+    container_name: csw-backend
     build: .
     ports:
       - '8000:8000'
     depends_on:
-      - cyber-warfare-database
+      - csw-database
     links:
-      - cyber-warfare-database
+      - csw-database

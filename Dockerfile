@@ -1,6 +1,6 @@
 FROM node:18-alpine
 
-LABEL name="Cyber Warfare Backend" maintainer="Filip Todorić <ft50626@fer.hr>"
+LABEL name="CS Wargame Backend" maintainer="Filip Todorić <ft50626@fer.hr>"
 
 ENV NODEJS_VERSION=18
 # set env database_url for prod deploy

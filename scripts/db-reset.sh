@@ -1,4 +1,4 @@
-docker stop cyber-warfare-database
-docker rm cyber-warfare-database
-docker compose up -d cyber-warfare-database
+docker stop csw-database
+docker rm csw-database
+docker compose up -d csw-database
 nest start --watch
