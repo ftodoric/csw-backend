@@ -36,7 +36,8 @@ export class UserRepository extends Repository<User> {
   }
 
   async getAllUsers(): Promise<PublicProfileDto[]> {
-    const query = this.createQueryBuilder('users')
+    const query = this.createQueryBuilder('user')
+
     const users: User[] = await query.getMany()
 
     return users.map((user) => {
