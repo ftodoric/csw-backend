@@ -1,4 +1,5 @@
-import { IsEnum, IsString } from 'class-validator'
+import { User } from '@auth/user.entity'
+import { IsEnum, IsObject, IsString } from 'class-validator'
 
 import { TeamSide } from '../team-side.enum'
 
@@ -9,18 +10,18 @@ export class TeamDto {
   @IsString()
   name: string
 
-  @IsString()
-  peoplePlayerId: string
+  @IsObject()
+  peoplePlayer: User
 
-  @IsString()
-  industryPlayerId: string
+  @IsObject()
+  industryPlayer: User
 
-  @IsString()
-  governmentPlayerId: string
+  @IsObject()
+  governmentPlayer: User
 
-  @IsString()
-  energyPlayerId: string
+  @IsObject()
+  energyPlayer: User
 
-  @IsString()
-  intelligencePlayerId: string
+  @IsObject()
+  intelligencePlayer: User
 }

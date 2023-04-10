@@ -20,25 +20,57 @@ export class GamesService {
   ) {}
 
   async createGame(gameDto: CreateGameDto, user: User): Promise<string> {
+    const electoratePlayer = await this.userRepository.findOneBy({
+      id: gameDto.electoratePlayer,
+    })
+    const ukPlcPlayer = await this.userRepository.findOneBy({
+      id: gameDto.ukPlcPlayer,
+    })
+    const ukGovernmentPlayer = await this.userRepository.findOneBy({
+      id: gameDto.ukGovernmentPlayer,
+    })
+    const ukEnergyPlayer = await this.userRepository.findOneBy({
+      id: gameDto.ukEnergyPlayer,
+    })
+    const gchqPlayer = await this.userRepository.findOneBy({
+      id: gameDto.gchqPlayer,
+    })
+
+    const onlineTrollsPlayer = await this.userRepository.findOneBy({
+      id: gameDto.onlineTrollsPlayer,
+    })
+    const energeticBearPlayer = await this.userRepository.findOneBy({
+      id: gameDto.energeticBearPlayer,
+    })
+    const russianGovernmentPlayer = await this.userRepository.findOneBy({
+      id: gameDto.russianGovernmentPlayer,
+    })
+    const rosenergoatomPlayer = await this.userRepository.findOneBy({
+      id: gameDto.rosenergoatomPlayer,
+    })
+    const scsPlayer = await this.userRepository.findOneBy({
+      id: gameDto.scsPlayer,
+    })
+
     // Create two teams and assign players to each team entity
     const blueTeam = await this.teamsRepository.createTeam({
       side: TeamSide.Blue,
       name: gameDto.blueTeamName,
-      peoplePlayerId: gameDto.electoratePlayer,
-      industryPlayerId: gameDto.ukPlcPlayer,
-      governmentPlayerId: gameDto.ukGovernmentPlayer,
-      energyPlayerId: gameDto.ukEnergyPlayer,
-      intelligencePlayerId: gameDto.gchqPlayer,
+      peoplePlayer: electoratePlayer,
+      industryPlayer: ukPlcPlayer,
+      governmentPlayer: ukGovernmentPlayer,
+      energyPlayer: ukEnergyPlayer,
+      intelligencePlayer: gchqPlayer,
     })
 
     const redTeam = await this.teamsRepository.createTeam({
       side: TeamSide.Red,
       name: gameDto.redTeamName,
-      peoplePlayerId: gameDto.onlineTrollsPlayer,
-      industryPlayerId: gameDto.energeticBearPlayer,
-      governmentPlayerId: gameDto.russianGovernmentPlayer,
-      energyPlayerId: gameDto.rosenergoatomPlayer,
-      intelligencePlayerId: gameDto.scsPlayer,
+      peoplePlayer: onlineTrollsPlayer,
+      industryPlayer: energeticBearPlayer,
+      governmentPlayer: russianGovernmentPlayer,
+      energyPlayer: rosenergoatomPlayer,
+      intelligencePlayer: scsPlayer,
     })
 
     // Create a game with both sides

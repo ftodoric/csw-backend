@@ -1,5 +1,14 @@
-import { Game } from 'src/games/game.entity'
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { User } from '@auth/user.entity'
+import { Game } from '@games/game.entity'
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm'
 
 import { TeamSide } from './team-side.enum'
 
@@ -14,20 +23,25 @@ export class Team {
   @Column()
   name: string
 
-  @Column()
-  peoplePlayerId: string
+  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @JoinColumn()
+  peoplePlayer: User
 
-  @Column()
-  industryPlayerId: string
+  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @JoinColumn()
+  industryPlayer: User
 
-  @Column()
-  governmentPlayerId: string
+  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @JoinColumn()
+  governmentPlayer: User
 
-  @Column()
-  energyPlayerId: string
+  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @JoinColumn()
+  energyPlayer: User
 
-  @Column()
-  intelligencePlayerId: string
+  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @JoinColumn()
+  intelligencePlayer: User
 
   @OneToOne(() => Game)
   game: Game
