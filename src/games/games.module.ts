@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
-import { AuthModule } from 'src/auth/auth.module'
-import { User } from 'src/auth/user.entity'
-import { UserRepository } from 'src/auth/user.repository'
-import { Team } from 'src/teams/team.entity'
-import { TeamsRepository } from 'src/teams/teams.repository'
+import { AuthModule, AuthRepository } from '@auth'
+import { User } from '@auth/entities'
+import { PlayersRepository } from '@players'
+import { Player } from '@players/entities'
+import { TeamsRepository } from '@teams'
+import { Team } from '@teams/entities'
 
-import { Game } from './game.entity'
+import { Game } from './entities'
 import { GamesController } from './games.controller'
 import { GamesRepository } from './games.repository'
 import { GamesService } from './games.service'
@@ -16,10 +17,17 @@ import { GamesService } from './games.service'
   imports: [
     AuthModule,
     TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([Player]),
     TypeOrmModule.forFeature([Team]),
     TypeOrmModule.forFeature([Game]),
   ],
-  providers: [UserRepository, TeamsRepository, GamesService, GamesRepository],
+  providers: [
+    GamesService,
+    GamesRepository,
+    AuthRepository,
+    PlayersRepository,
+    TeamsRepository,
+  ],
   controllers: [GamesController],
 })
 export class GamesModule {}

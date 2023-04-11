@@ -1,56 +1,85 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { User } from 'src/auth/user.entity'
-import { UserRepository } from 'src/auth/user.repository'
-import { TeamSide } from 'src/teams/team-side.enum'
-import { TeamsRepository } from 'src/teams/teams.repository'
+import { AuthRepository } from '@auth'
+import { User } from '@auth/entities'
+import { PlayersRepository } from '@players'
+import { TeamsRepository } from '@teams'
+import { TeamSide } from '@teams/interface'
 
-import { CreateGameDto } from './dto/create-game.dto'
-import { GameStatus } from './game-status.enum'
-import { Game } from './game.entity'
+import { CreateGameDto } from './dto'
+import { Game } from './entities'
 import { GamesRepository } from './games.repository'
+import { GameStatus } from './interface'
 
 @Injectable()
 export class GamesService {
   constructor(
     @InjectRepository(GamesRepository) private gamesRepository: GamesRepository,
     @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
-    @InjectRepository(UserRepository) private userRepository: UserRepository
+    @InjectRepository(PlayersRepository)
+    private playersRepository: PlayersRepository,
+    @InjectRepository(AuthRepository) private authRepository: AuthRepository
   ) {}
 
   async createGame(gameDto: CreateGameDto, user: User): Promise<string> {
-    const electoratePlayer = await this.userRepository.findOneBy({
+    const electorateUser = await this.authRepository.findOneBy({
       id: gameDto.electoratePlayer,
     })
-    const ukPlcPlayer = await this.userRepository.findOneBy({
+    const ukPlcUser = await this.authRepository.findOneBy({
       id: gameDto.ukPlcPlayer,
     })
-    const ukGovernmentPlayer = await this.userRepository.findOneBy({
+    const ukGovernmentUser = await this.authRepository.findOneBy({
       id: gameDto.ukGovernmentPlayer,
     })
-    const ukEnergyPlayer = await this.userRepository.findOneBy({
+    const ukEnergyUser = await this.authRepository.findOneBy({
       id: gameDto.ukEnergyPlayer,
     })
-    const gchqPlayer = await this.userRepository.findOneBy({
+    const gchqUser = await this.authRepository.findOneBy({
       id: gameDto.gchqPlayer,
     })
 
-    const onlineTrollsPlayer = await this.userRepository.findOneBy({
+    const onlineTrollsUser = await this.authRepository.findOneBy({
       id: gameDto.onlineTrollsPlayer,
     })
-    const energeticBearPlayer = await this.userRepository.findOneBy({
+    const energeticBearUser = await this.authRepository.findOneBy({
       id: gameDto.energeticBearPlayer,
     })
-    const russianGovernmentPlayer = await this.userRepository.findOneBy({
+    const russianGovernmentUser = await this.authRepository.findOneBy({
       id: gameDto.russianGovernmentPlayer,
     })
-    const rosenergoatomPlayer = await this.userRepository.findOneBy({
+    const rosenergoatomUser = await this.authRepository.findOneBy({
       id: gameDto.rosenergoatomPlayer,
     })
-    const scsPlayer = await this.userRepository.findOneBy({
+    const scsUser = await this.authRepository.findOneBy({
       id: gameDto.scsPlayer,
     })
+
+    const electoratePlayer = await this.playersRepository.createPlayer(
+      electorateUser
+    )
+    const ukPlcPlayer = await this.playersRepository.createPlayer(ukPlcUser)
+    const ukGovernmentPlayer = await this.playersRepository.createPlayer(
+      ukGovernmentUser
+    )
+    const ukEnergyPlayer = await this.playersRepository.createPlayer(
+      ukEnergyUser
+    )
+    const gchqPlayer = await this.playersRepository.createPlayer(gchqUser)
+
+    const onlineTrollsPlayer = await this.playersRepository.createPlayer(
+      onlineTrollsUser
+    )
+    const energeticBearPlayer = await this.playersRepository.createPlayer(
+      energeticBearUser
+    )
+    const russianGovernmentPlayer = await this.playersRepository.createPlayer(
+      russianGovernmentUser
+    )
+    const rosenergoatomPlayer = await this.playersRepository.createPlayer(
+      rosenergoatomUser
+    )
+    const scsPlayer = await this.playersRepository.createPlayer(scsUser)
 
     // Create two teams and assign players to each team entity
     const blueTeam = await this.teamsRepository.createTeam({

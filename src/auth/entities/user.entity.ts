@@ -1,4 +1,5 @@
-import { Team } from '@teams/team.entity'
+import { Player } from '@players/entities'
+import { Team } from '@teams/entities'
 import { Exclude } from 'class-transformer'
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 
@@ -28,4 +29,7 @@ export class User {
 
   @OneToMany(() => Team, (team) => team.intelligencePlayer)
   intelligencePlayer: Team
+
+  @OneToMany(() => Player, (player) => player.id)
+  player: Player
 }

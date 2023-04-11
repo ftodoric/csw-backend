@@ -5,11 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 
-import { User } from 'src/auth/user.entity'
+import { User } from '@auth/entities'
 import { DataSource, Repository } from 'typeorm'
 
-import { GameDto } from './dto/game.dto'
-import { Game } from './game.entity'
+import { GameDto } from './dto'
+import { Game } from './entities'
 
 @Injectable()
 export class GamesRepository extends Repository<Game> {
@@ -33,6 +33,8 @@ export class GamesRepository extends Repository<Game> {
 
   async getGames(user: User): Promise<Game[]> {
     const query = this.createQueryBuilder('game')
+
+      // SELECT
       .select('game.id')
       .addSelect('game.ownerId')
       .addSelect('game.status')
@@ -40,30 +42,53 @@ export class GamesRepository extends Repository<Game> {
       .addSelect('blueTeam.name')
       .addSelect('redTeam.name')
 
-      .leftJoin('game.blueTeam', 'blueTeam')
-      .leftJoin('game.redTeam', 'redTeam')
-      .leftJoinAndSelect('blueTeam.peoplePlayer', 'electoratePlayer')
-      .leftJoinAndSelect('blueTeam.industryPlayer', 'ukPlcPlayer')
-      .leftJoinAndSelect('blueTeam.governmentPlayer', 'ukGovernmentPlayer')
-      .leftJoinAndSelect('blueTeam.energyPlayer', 'ukEnergyPlayer')
-      .leftJoinAndSelect('blueTeam.intelligencePlayer', 'gchqPlayer')
-      .leftJoinAndSelect('redTeam.peoplePlayer', 'onlineTrollsPlayer')
-      .leftJoinAndSelect('redTeam.industryPlayer', 'energeticBearPlayer')
-      .leftJoinAndSelect('redTeam.governmentPlayer', 'russianGovernmentPlayer')
-      .leftJoinAndSelect('redTeam.energyPlayer', 'rosenergoatomPlayer')
-      .leftJoinAndSelect('redTeam.intelligencePlayer', 'scsPlayer')
+      // JOINS
+      .innerJoin('game.blueTeam', 'blueTeam')
+      .innerJoin('game.redTeam', 'redTeam')
+
+      // Join blue team players
+      .innerJoin('blueTeam.peoplePlayer', 'electoratePlayer')
+      .innerJoin('blueTeam.industryPlayer', 'ukPlcPlayer')
+      .innerJoin('blueTeam.governmentPlayer', 'ukGovernmentPlayer')
+      .innerJoin('blueTeam.energyPlayer', 'ukEnergyPlayer')
+      .innerJoin('blueTeam.intelligencePlayer', 'gchqPlayer')
+
+      // Join red team players
+      .innerJoin('redTeam.peoplePlayer', 'onlineTrollsPlayer')
+      .innerJoin('redTeam.industryPlayer', 'energeticBearPlayer')
+      .innerJoin('redTeam.governmentPlayer', 'russianGovernmentPlayer')
+      .innerJoin('redTeam.energyPlayer', 'rosenergoatomPlayer')
+      .innerJoin('redTeam.intelligencePlayer', 'scsPlayer')
+
+      // Join blue players users
+      .innerJoin('electoratePlayer.user', 'electorateUser')
+      .innerJoin('ukPlcPlayer.user', 'ukPlcUser')
+      .innerJoin('ukGovernmentPlayer.user', 'ukGovernmentUser')
+      .innerJoin('ukEnergyPlayer.user', 'ukEnergyUser')
+      .innerJoin('gchqPlayer.user', 'gchqUser')
+
+      // Join red players users
+      .innerJoin('onlineTrollsPlayer.user', 'onlineTrollsUser')
+      .innerJoin('energeticBearPlayer.user', 'energeticBearUser')
+      .innerJoin('russianGovernmentPlayer.user', 'russianGovernmentUser')
+      .innerJoin('rosenergoatomPlayer.user', 'rosenergoatomUser')
+      .innerJoin('scsPlayer.user', 'scsUser')
+
+      // Join winner team
       .leftJoinAndSelect('game.winner', 'winner')
 
-      .where('blueTeam.peoplePlayerId = :id', { id: user.id })
-      .orWhere('blueTeam.industryPlayerId = :id', { id: user.id })
-      .orWhere('blueTeam.governmentPlayerId = :id', { id: user.id })
-      .orWhere('blueTeam.energyPlayerId = :id', { id: user.id })
-      .orWhere('blueTeam.intelligencePlayerId = :id', { id: user.id })
-      .orWhere('redTeam.peoplePlayerId = :id', { id: user.id })
-      .orWhere('redTeam.industryPlayerId = :id', { id: user.id })
-      .orWhere('redTeam.governmentPlayerId = :id', { id: user.id })
-      .orWhere('redTeam.energyPlayerId = :id', { id: user.id })
-      .orWhere('redTeam.intelligencePlayerId = :id', { id: user.id })
+      // WHERES
+      // Only games that include the users are eligible
+      .where('electorateUser.id = :id', { id: user.id })
+      .orWhere('ukPlcUser.id = :id', { id: user.id })
+      .orWhere('ukGovernmentUser.id = :id', { id: user.id })
+      .orWhere('ukEnergyUser.id = :id', { id: user.id })
+      .orWhere('gchqUser.id = :id', { id: user.id })
+      .orWhere('onlineTrollsUser.id = :id', { id: user.id })
+      .orWhere('energeticBearUser.id = :id', { id: user.id })
+      .orWhere('russianGovernmentPlayer.id = :id', { id: user.id })
+      .orWhere('rosenergoatomUser.id = :id', { id: user.id })
+      .orWhere('scsUser.id = :id', { id: user.id })
     return query.getMany()
   }
 

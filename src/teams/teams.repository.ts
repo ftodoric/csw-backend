@@ -2,8 +2,8 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common'
 
 import { DataSource, Repository } from 'typeorm'
 
-import { TeamDto } from './dto/team.dto'
-import { Team } from './team.entity'
+import { TeamDto } from './dto'
+import { Team } from './entities'
 
 @Injectable()
 export class TeamsRepository extends Repository<Team> {

@@ -1,4 +1,5 @@
-import { Team } from 'src/teams/team.entity'
+import { GameStatus } from '@games/interface'
+import { Team } from '@teams/entities'
 import {
   Column,
   Entity,
@@ -6,8 +7,6 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm'
-
-import { GameStatus } from './game-status.enum'
 
 @Entity()
 export class Game {

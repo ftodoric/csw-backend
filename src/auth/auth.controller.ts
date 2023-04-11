@@ -4,11 +4,10 @@ import { instanceToPlain } from 'class-transformer'
 import { Response } from 'express'
 
 import { AuthService } from './auth.service'
-import { AuthCredentialsDto } from './dto/auth-credentials.dto'
-import { PublicProfileDto } from './dto/public-user.dto'
+import { User } from './decorators'
+import { PublicProfileDto, AuthCredentialsDto } from './dto'
+import { User as UserEntity } from './entities'
 import { JwtAuthGuard } from './jwt-auth.guard'
-import { User } from './user.decorator'
-import { User as UserEntity } from './user.entity'
 
 @Controller('auth')
 export class AuthController {

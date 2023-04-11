@@ -7,12 +7,11 @@ import {
 import * as bcrypt from 'bcrypt'
 import { DataSource, Repository } from 'typeorm'
 
-import { AuthCredentialsDto } from './dto/auth-credentials.dto'
-import { PublicProfileDto } from './dto/public-user.dto'
-import { User } from './user.entity'
+import { AuthCredentialsDto, PublicProfileDto } from './dto'
+import { User } from './entities'
 
 @Injectable()
-export class UserRepository extends Repository<User> {
+export class AuthRepository extends Repository<User> {
   constructor(dataSource: DataSource) {
     super(User, dataSource.createEntityManager())
   }

@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
-import { User } from 'src/auth/user.decorator'
-import { User as UserEntity } from 'src/auth/user.entity'
+import { User } from '@auth/decorators'
+import { User as UserEntity } from '@auth/entities'
+import { JwtAuthGuard } from '@auth/jwt-auth.guard'
 
-import { CreateGameDto } from './dto/create-game.dto'
-import { Game } from './game.entity'
+import { CreateGameDto } from './dto'
+import { Game } from './entities'
 import { GamesService } from './games.service'
 
 @Controller('games')

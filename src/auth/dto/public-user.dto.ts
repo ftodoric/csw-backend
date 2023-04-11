@@ -1,4 +1,4 @@
-import { User } from '../user.entity'
+import { User } from '@auth/entities'
 
 export class PublicProfileDto {
   id: string
