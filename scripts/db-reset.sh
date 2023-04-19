@@ -1,4 +1,16 @@
-docker stop csw-database
-docker rm csw-database
+# Stop container is running
+docker stop csw-database > /dev/null
+echo
+echo "  🛑 Container stopped"
+
+# Remove it
+docker rm csw-database > /dev/null
+echo
+echo "  ❌ Database deleted"
+echo
+
+# Compose from postgres image
 docker compose up -d csw-database
-nest start --watch
+
+# Run dev server
+#nest start --watch
