@@ -13,4 +13,4 @@ echo
 docker compose up -d csw-database
 
 # Run dev server
-#nest start --watch
+nest start --watch
