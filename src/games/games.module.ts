@@ -12,6 +12,7 @@ import { Game } from './entities'
 import { GamesController } from './games.controller'
 import { GamesRepository } from './games.repository'
 import { GamesService } from './games.service'
+import { TimerGateway } from './timer.gateway'
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { GamesService } from './games.service'
     AuthRepository,
     PlayersRepository,
     TeamsRepository,
+    TimerGateway,
   ],
   controllers: [GamesController],
 })

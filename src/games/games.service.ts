@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { AuthRepository } from '@auth'
 import { User } from '@auth/entities'
 import { PlayersRepository } from '@players'
+import { PlayerType } from '@players/interface'
 import { TeamsRepository } from '@teams'
 import { TeamSide } from '@teams/interface'
 
@@ -11,6 +12,7 @@ import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
 import { GameStatus } from './interface'
+import { TURN_TIME } from './utils/turn-mechanics'
 
 @Injectable()
 export class GamesService {
@@ -109,6 +111,10 @@ export class GamesService {
       redTeam: redTeam,
       status: GameStatus.NotStarted,
       description: gameDto.description,
+      turnsRemainingTime: TURN_TIME,
+      paused: true,
+      activeSide: TeamSide.Blue,
+      activePlayer: PlayerType.People,
     })
   }
 

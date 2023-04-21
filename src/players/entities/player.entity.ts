@@ -1,6 +1,13 @@
 import { User } from '@auth/entities'
+import { Game } from '@games/entities'
 import { Exclude } from 'class-transformer'
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm'
 
 @Entity()
 export class Player {
@@ -19,4 +26,8 @@ export class Player {
 
   @Column()
   victoryPoints: number
+
+  // Game in which the user is active
+  @OneToOne(() => Game, (game) => game.id)
+  game: Game
 }
