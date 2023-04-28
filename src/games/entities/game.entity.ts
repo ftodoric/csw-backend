@@ -1,4 +1,4 @@
-import { GameStatus } from '@games/interface'
+import { GameStatus, Outcome, Period } from '@games/interface'
 import { PlayerType } from '@players/interface'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
@@ -32,9 +32,8 @@ export class Game {
   @Column({ nullable: true })
   description: string
 
-  @OneToOne(() => Team, (team) => team.id, { nullable: true })
-  @JoinColumn()
-  winner: Team
+  @Column({ nullable: true })
+  outcome: Outcome
 
   @Column()
   turnsRemainingTime: number
@@ -47,4 +46,7 @@ export class Game {
 
   @Column()
   activePlayer: PlayerType
+
+  @Column()
+  activePeriod: Period
 }

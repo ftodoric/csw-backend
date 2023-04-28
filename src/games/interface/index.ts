@@ -1,3 +1,5 @@
 export { GameStatus } from './game-status.enum'
 export { TimerEvents } from './timer-events.enum'
 export * from './timer.types'
+export { Period } from './game-period.enum'
+export { Outcome } from './game-outcome.enum'

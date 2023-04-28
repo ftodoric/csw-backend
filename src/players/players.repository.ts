@@ -18,8 +18,8 @@ export class PlayersRepository extends Repository<Player> {
   async createPlayer(user: User): Promise<Player> {
     const player = this.create({
       user: user,
-      resource: 0,
-      vitality: 0,
+      resource: 3,
+      vitality: 4,
       victoryPoints: 0,
     })
     try {

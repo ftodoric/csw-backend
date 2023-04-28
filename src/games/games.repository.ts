@@ -38,6 +38,7 @@ export class GamesRepository extends Repository<Game> {
       .select('game.id')
       .addSelect('game.ownerId')
       .addSelect('game.status')
+      .addSelect('game.outcome')
       .addSelect('game.description')
       .addSelect('blueTeam.name')
       .addSelect('redTeam.name')
@@ -73,9 +74,6 @@ export class GamesRepository extends Repository<Game> {
       .innerJoin('russianGovernmentPlayer.user', 'russianGovernmentUser')
       .innerJoin('rosenergoatomPlayer.user', 'rosenergoatomUser')
       .innerJoin('scsPlayer.user', 'scsUser')
-
-      // Join winner team
-      .leftJoinAndSelect('game.winner', 'winner')
 
       // WHERES
       // Only games that include the users are eligible
