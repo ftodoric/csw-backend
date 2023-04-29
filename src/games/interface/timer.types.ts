@@ -6,3 +6,9 @@ export interface RoomTimer {
 export interface RoomsTimers {
   [gameId: string]: RoomTimer
 }
+
+export enum TimerEvents {
+  StartTimer = 'startTimer',
+  PauseTimer = 'pauseTimer',
+  Tick = 'tick',
+}

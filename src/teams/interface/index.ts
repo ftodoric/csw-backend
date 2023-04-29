@@ -1,1 +1,1 @@
-export { TeamSide } from './team-side.enum'
+export { TeamSide } from './team.types'

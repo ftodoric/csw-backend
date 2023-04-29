@@ -11,7 +11,7 @@ import { TeamSide } from '@teams/interface'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
-import { GameStatus, Period } from './interface'
+import { GameStatus, GamePeriod } from './interface'
 import { TURN_TIME } from './utils/turn-mechanics'
 
 @Injectable()
@@ -112,10 +112,9 @@ export class GamesService {
       status: GameStatus.NotStarted,
       description: gameDto.description,
       turnsRemainingTime: TURN_TIME,
-      paused: true,
       activeSide: TeamSide.Blue,
       activePlayer: PlayerType.People,
-      activePeriod: Period.January,
+      activePeriod: GamePeriod.January,
     })
   }
 

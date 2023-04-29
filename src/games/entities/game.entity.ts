@@ -1,4 +1,4 @@
-import { GameStatus, Outcome, Period } from '@games/interface'
+import { GameStatus, GameOutcome, GamePeriod } from '@games/interface'
 import { PlayerType } from '@players/interface'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
@@ -33,13 +33,10 @@ export class Game {
   description: string
 
   @Column({ nullable: true })
-  outcome: Outcome
+  outcome: GameOutcome
 
   @Column()
   turnsRemainingTime: number
-
-  @Column()
-  paused: boolean
 
   @Column()
   activeSide: TeamSide
@@ -48,5 +45,5 @@ export class Game {
   activePlayer: PlayerType
 
   @Column()
-  activePeriod: Period
+  activePeriod: GamePeriod
 }

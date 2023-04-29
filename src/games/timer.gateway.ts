@@ -11,7 +11,7 @@ import {
 import { Server, Socket } from 'socket.io'
 
 import { GamesRepository } from './games.repository'
-import { RoomsTimers, TimerEvents } from './interface'
+import { GameStatus, RoomsTimers, TimerEvents } from './interface'
 import {
   getGameIdQuery,
   getRoomName,
@@ -43,7 +43,10 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleStartTimer(@ConnectedSocket() client: Socket): Promise<void> {
     const gameId = getGameIdQuery(client)
 
-    await this.gamesRepository.save({ id: gameId, paused: false })
+    await this.gamesRepository.save({
+      id: gameId,
+      status: GameStatus.InProgress,
+    })
 
     const game = await this.gamesRepository.findOneBy({ id: gameId })
 
@@ -58,7 +61,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.gamesRepository.save({
       id: gameId,
       turnsRemainingTime: this.roomsTimers[gameId]['current'],
-      paused: true,
+      status: GameStatus.Paused,
     })
 
     clearRoomTimer(this.roomsTimers, gameId)

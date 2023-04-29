@@ -1,6 +1,12 @@
 import { Game } from '@games/entities'
 import { GamesRepository } from '@games/games.repository'
-import { Outcome, Period, RoomsTimers, TimerEvents } from '@games/interface'
+import {
+  GameOutcome,
+  GamePeriod,
+  GameStatus,
+  RoomsTimers,
+  TimerEvents,
+} from '@games/interface'
 import { Server, Socket } from 'socket.io'
 
 import { TURN_TIME, getNextTurnActives } from './turn-mechanics'
@@ -49,9 +55,11 @@ export const startRoomTimer = (
       time--
     } else {
       // Check if game ends
-      if (game.activePeriod === Period.December) {
-        // Accumulate all victory points on each side of the team
+      if (game.activePeriod === GamePeriod.December) {
+        // Set status to finished
+        await gamesRepository.save({ id: game.id, status: GameStatus.Finished })
 
+        // Accumulate all victory points on each side of the team
         const blueTeamVP =
           game.blueTeam.peoplePlayer.victoryPoints +
           game.blueTeam.industryPlayer.victoryPoints +
@@ -66,25 +74,24 @@ export const startRoomTimer = (
           game.redTeam.energyPlayer.victoryPoints +
           game.redTeam.intelligencePlayer.victoryPoints
 
+        // Team with more VP wins
         if (blueTeamVP > redTeamVP) {
           await gamesRepository.save({
             id: game.id,
-            outcome: Outcome.BlueWins,
+            outcome: GameOutcome.BlueWins,
           })
         } else if (redTeamVP > blueTeamVP) {
           await gamesRepository.save({
             id: game.id,
-            outcome: Outcome.RedWins,
+            outcome: GameOutcome.RedWins,
           })
         } else {
           // TIE
           await gamesRepository.save({
             id: game.id,
-            outcome: Outcome.Tie,
+            outcome: GameOutcome.Tie,
           })
         }
-
-        // Team with more VP wins
 
         clearInterval(timer)
       } else {
