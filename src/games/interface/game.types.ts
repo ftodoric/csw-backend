@@ -25,3 +25,10 @@ export enum GameOutcome {
   RedWins,
   Tie,
 }
+
+export enum GameAction {
+  DISTRIBUTE = 'distribute',
+  REVITALISE = 'revitalise',
+  ATTACK = 'attack',
+  ABSTAIN = 'abstain',
+}

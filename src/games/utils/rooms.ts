@@ -1,15 +1,8 @@
 import { Game } from '@games/entities'
-import { GamesRepository } from '@games/games.repository'
-import {
-  GameOutcome,
-  GamePeriod,
-  GameStatus,
-  RoomsTimers,
-  TimerEvents,
-} from '@games/interface'
+import { GamesService } from '@games/games.service'
+import { GamePeriod } from '@games/interface/game.types'
+import { RoomsTimers, TimerEvents } from '@games/interface/timer.types'
 import { Server, Socket } from 'socket.io'
-
-import { TURN_TIME, getNextTurnActives } from './turn-mechanics'
 
 /**
  * This function extracts gameId query parameter from
@@ -36,7 +29,7 @@ export const startRoomTimer = (
   server: Server,
   roomsTimers: RoomsTimers,
   game: Game,
-  gamesRepository: GamesRepository
+  gamesService: GamesService
 ) => {
   let time: number = game.turnsRemainingTime
 
@@ -56,66 +49,18 @@ export const startRoomTimer = (
     } else {
       // Check if game ends
       if (game.activePeriod === GamePeriod.December) {
-        // Set status to finished
-        await gamesRepository.save({ id: game.id, status: GameStatus.Finished })
+        gamesService.prepareGameOver(game.id)
 
-        // Accumulate all victory points on each side of the team
-        const blueTeamVP =
-          game.blueTeam.peoplePlayer.victoryPoints +
-          game.blueTeam.industryPlayer.victoryPoints +
-          game.blueTeam.governmentPlayer.victoryPoints +
-          game.blueTeam.energyPlayer.victoryPoints +
-          game.blueTeam.intelligencePlayer.victoryPoints
-
-        const redTeamVP =
-          game.redTeam.peoplePlayer.victoryPoints +
-          game.redTeam.industryPlayer.victoryPoints +
-          game.redTeam.governmentPlayer.victoryPoints +
-          game.redTeam.energyPlayer.victoryPoints +
-          game.redTeam.intelligencePlayer.victoryPoints
-
-        // Team with more VP wins
-        if (blueTeamVP > redTeamVP) {
-          await gamesRepository.save({
-            id: game.id,
-            outcome: GameOutcome.BlueWins,
-          })
-        } else if (redTeamVP > blueTeamVP) {
-          await gamesRepository.save({
-            id: game.id,
-            outcome: GameOutcome.RedWins,
-          })
-        } else {
-          // TIE
-          await gamesRepository.save({
-            id: game.id,
-            outcome: GameOutcome.Tie,
-          })
-        }
-
-        clearInterval(timer)
+        this.clearInterval(timer)
       } else {
         // GAME CONTINUES
         // NEXT TURN
-        const { nextPlayer, nextSide, nextPeriod } = getNextTurnActives(
-          game.activeSide,
-          game.activePeriod
-        )
+        await gamesService.nextTurnOnTimeout(game.id)
 
-        await gamesRepository.save({
-          id: game.id,
-          // Reset time
-          turnsRemainingTime: TURN_TIME,
-          // Change actives
-          activePlayer: nextPlayer,
-          activeSide: nextSide,
-          activePeriod: nextPeriod,
-        })
-
-        const refreshedGame = await gamesRepository.findOneBy({ id: game.id })
+        const refreshedGame = await gamesService.getGameById(game.id)
 
         clearInterval(timer)
-        startRoomTimer(server, roomsTimers, refreshedGame, gamesRepository)
+        startRoomTimer(server, roomsTimers, refreshedGame, gamesService)
       }
     }
   }, 1000)

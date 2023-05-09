@@ -1,4 +1,4 @@
-import { InjectRepository } from '@nestjs/typeorm'
+import { Inject, forwardRef } from '@nestjs/common'
 import {
   ConnectedSocket,
   OnGatewayConnection,
@@ -8,15 +8,15 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets'
 
+import { GamesService } from '@games'
 import { Server, Socket } from 'socket.io'
 
-import { GamesRepository } from './games.repository'
-import { GameStatus, RoomsTimers, TimerEvents } from './interface'
+import { RoomsTimers, TimerEvents } from './interface/timer.types'
 import {
+  clearRoomTimer,
   getGameIdQuery,
   getRoomName,
   startRoomTimer,
-  clearRoomTimer,
 } from './utils/rooms'
 
 @WebSocketGateway()
@@ -26,7 +26,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private roomsTimers: RoomsTimers = {}
 
   constructor(
-    @InjectRepository(GamesRepository) private gamesRepository: GamesRepository
+    @Inject(forwardRef(() => GamesService)) private gamesService: GamesService
   ) {}
 
   handleConnection(@ConnectedSocket() client: Socket) {
@@ -39,18 +39,19 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(getRoomName(gameId))
   }
 
+  /**
+   * This method continues the timer from whatever stored value in the game relation.
+   * @param client
+   */
   @SubscribeMessage(TimerEvents.StartTimer)
-  async handleStartTimer(@ConnectedSocket() client: Socket): Promise<void> {
+  async handleContinueTimer(@ConnectedSocket() client: Socket): Promise<void> {
     const gameId = getGameIdQuery(client)
 
-    await this.gamesRepository.save({
-      id: gameId,
-      status: GameStatus.InProgress,
-    })
+    await this.gamesService.continueGame(gameId)
 
-    const game = await this.gamesRepository.findOneBy({ id: gameId })
+    const game = await this.gamesService.getGameById(gameId)
 
-    startRoomTimer(this.server, this.roomsTimers, game, this.gamesRepository)
+    startRoomTimer(this.server, this.roomsTimers, game, this.gamesService)
   }
 
   @SubscribeMessage(TimerEvents.PauseTimer)
@@ -58,12 +59,42 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const gameId = getGameIdQuery(client)
 
     // Persist remaining time
-    await this.gamesRepository.save({
-      id: gameId,
-      turnsRemainingTime: this.roomsTimers[gameId]['current'],
-      status: GameStatus.Paused,
-    })
+    this.gamesService.pauseGame(gameId, this.roomsTimers[gameId]['current'])
 
     clearRoomTimer(this.roomsTimers, gameId)
+  }
+
+  /**
+   * This function is called on the game end.
+   * Timer is stoped, remaining time saved and timer deleted.
+   * @param gameId
+   */
+  stopTimer(gameId): number {
+    const remainingTime = this.roomsTimers[gameId].current
+
+    // Clear timer
+    clearRoomTimer(this.roomsTimers, gameId)
+
+    // Return remaining time for game stats
+    return remainingTime
+  }
+
+  /**
+   * This method is called on each user action and timer is restarted.
+   * @param gameId
+   */
+  async restartTimer(gameId: string) {
+    // Reset turns remaining time in the database
+    await this.gamesService.resetTurnsTime(gameId)
+
+    const refreshedGame = await this.gamesService.getGameById(gameId)
+
+    clearRoomTimer(this.roomsTimers, gameId)
+    startRoomTimer(
+      this.server,
+      this.roomsTimers,
+      refreshedGame,
+      this.gamesService
+    )
   }
 }

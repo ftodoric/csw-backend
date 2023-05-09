@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { AuthRepository } from '@auth'
@@ -8,11 +8,16 @@ import { PlayerType } from '@players/interface'
 import { TeamsRepository } from '@teams'
 import { TeamSide } from '@teams/interface'
 
+import {
+  TURN_TIME,
+  getNextActivesOnUserAction,
+  getNextTurnActives,
+} from './config/game-mechanics'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
-import { GameStatus, GamePeriod } from './interface'
-import { TURN_TIME } from './utils/turn-mechanics'
+import { GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
+import { TimerGateway } from './timer.gateway'
 
 @Injectable()
 export class GamesService {
@@ -21,7 +26,8 @@ export class GamesService {
     @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
     @InjectRepository(PlayersRepository)
     private playersRepository: PlayersRepository,
-    @InjectRepository(AuthRepository) private authRepository: AuthRepository
+    @InjectRepository(AuthRepository) private authRepository: AuthRepository,
+    @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
   ) {}
 
   async createGame(gameDto: CreateGameDto, user: User): Promise<string> {
@@ -124,5 +130,130 @@ export class GamesService {
 
   async getGameById(id: string): Promise<Game> {
     return this.gamesRepository.getGameById(id)
+  }
+
+  async setNextActives(gameId: string, user: User) {
+    const { activePlayer, activeSide, activePeriod } =
+      await this.gamesRepository.findOneBy({
+        id: gameId,
+      })
+
+    if (
+      activePlayer === PlayerType.Intelligence &&
+      activeSide === TeamSide.Red &&
+      activePeriod === GamePeriod.December
+    ) {
+      // GAME OVER
+
+      // Clear timer
+      await this.prepareGameOver(gameId)
+    } else {
+      // GAME CONTINUES
+      const { nextPlayer, nextSide, nextPeriod } = getNextActivesOnUserAction(
+        activePlayer,
+        activeSide,
+        activePeriod
+      )
+
+      // Set next
+      await this.gamesRepository.save({
+        id: gameId,
+        activePlayer: nextPlayer,
+        activeSide: nextSide,
+        activePeriod: nextPeriod,
+      })
+
+      // Reset timer if the last player in a team made a move
+      if (activePlayer === PlayerType.Intelligence)
+        await this.timerGateway.restartTimer(gameId)
+    }
+  }
+
+  async prepareGameOver(gameId: string) {
+    const game = await this.gamesRepository.findOneBy({ id: gameId })
+
+    // Accumulate all victory points on each side of the team
+    const blueTeamVP =
+      game.blueTeam.peoplePlayer.victoryPoints +
+      game.blueTeam.industryPlayer.victoryPoints +
+      game.blueTeam.governmentPlayer.victoryPoints +
+      game.blueTeam.energyPlayer.victoryPoints +
+      game.blueTeam.intelligencePlayer.victoryPoints
+
+    const redTeamVP =
+      game.redTeam.peoplePlayer.victoryPoints +
+      game.redTeam.industryPlayer.victoryPoints +
+      game.redTeam.governmentPlayer.victoryPoints +
+      game.redTeam.energyPlayer.victoryPoints +
+      game.redTeam.intelligencePlayer.victoryPoints
+
+    // Team with more VP wins
+    if (blueTeamVP > redTeamVP) {
+      await this.gamesRepository.save({
+        id: game.id,
+        outcome: GameOutcome.BlueWins,
+      })
+    } else if (redTeamVP > blueTeamVP) {
+      await this.gamesRepository.save({
+        id: game.id,
+        outcome: GameOutcome.RedWins,
+      })
+    } else {
+      // TIE
+      await this.gamesRepository.save({
+        id: game.id,
+        outcome: GameOutcome.Tie,
+      })
+    }
+
+    // Update the game status and remaining time
+    const remainingTime = this.timerGateway.stopTimer(gameId)
+
+    await this.gamesRepository.save({
+      id: gameId,
+      turnsRemainingTime: remainingTime,
+      status: GameStatus.Finished,
+    })
+  }
+
+  async nextTurnOnTimeout(gameId: string) {
+    const game = await this.gamesRepository.getGameById(gameId)
+
+    const { nextPlayer, nextSide, nextPeriod } = await getNextTurnActives(
+      game.activeSide,
+      game.activePeriod
+    )
+
+    await this.gamesRepository.save({
+      id: game.id,
+      // Reset time
+      turnsRemainingTime: TURN_TIME,
+      // Change actives
+      activePlayer: nextPlayer,
+      activeSide: nextSide,
+      activePeriod: nextPeriod,
+    })
+  }
+
+  async resetTurnsTime(gameId: string) {
+    await this.gamesRepository.save({
+      id: gameId,
+      turnsRemainingTime: TURN_TIME,
+    })
+  }
+
+  async pauseGame(gameId: string, remainingTime: number) {
+    await this.gamesRepository.save({
+      id: gameId,
+      turnsRemainingTime: remainingTime,
+      status: GameStatus.Paused,
+    })
+  }
+
+  async continueGame(gameId: string) {
+    this.gamesRepository.save({
+      id: gameId,
+      status: GameStatus.InProgress,
+    })
   }
 }
