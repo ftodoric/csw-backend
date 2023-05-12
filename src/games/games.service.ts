@@ -144,9 +144,9 @@ export class GamesService {
       activePeriod === GamePeriod.December
     ) {
       // GAME OVER
-
-      // Clear timer
-      await this.prepareGameOver(gameId)
+      // Stop timer
+      const remainingTime = this.timerGateway.stopTimer(gameId)
+      await this.setGameOver(gameId, remainingTime)
     } else {
       // GAME CONTINUES
       const { nextPlayer, nextSide, nextPeriod } = getNextActivesOnUserAction(
@@ -169,7 +169,7 @@ export class GamesService {
     }
   }
 
-  async prepareGameOver(gameId: string) {
+  async setGameOver(gameId: string, remainingTime: number) {
     const game = await this.gamesRepository.findOneBy({ id: gameId })
 
     // Accumulate all victory points on each side of the team
@@ -205,9 +205,6 @@ export class GamesService {
         outcome: GameOutcome.Tie,
       })
     }
-
-    // Update the game status and remaining time
-    const remainingTime = this.timerGateway.stopTimer(gameId)
 
     await this.gamesRepository.save({
       id: gameId,

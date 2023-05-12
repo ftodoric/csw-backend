@@ -2,6 +2,7 @@ import { Game } from '@games/entities'
 import { GamesService } from '@games/games.service'
 import { GamePeriod } from '@games/interface/game.types'
 import { RoomsTimers, TimerEvents } from '@games/interface/timer.types'
+import { TeamSide } from '@teams/interface'
 import { Server, Socket } from 'socket.io'
 
 /**
@@ -37,24 +38,38 @@ export const startRoomTimer = (
 
   // Schedule ticks for the room
   const timer = setInterval(async function () {
-    server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
-      time: time,
-    })
-
     // Store new time
     roomsTimers[game.id]['current'] = time
 
     if (time > 0) {
+      server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
+        time: time,
+        isFinished: false,
+      })
+
       time--
     } else {
       // Check if game ends
-      if (game.activePeriod === GamePeriod.December) {
-        gamesService.prepareGameOver(game.id)
+      if (
+        game.activePeriod === GamePeriod.December &&
+        game.activeSide === TeamSide.Red
+      ) {
+        server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
+          time: time,
+          isFinished: true,
+        })
 
-        this.clearInterval(timer)
+        const remainingTime = stopTimer(roomsTimers, game.id)
+
+        gamesService.setGameOver(game.id, remainingTime)
       } else {
         // GAME CONTINUES
         // NEXT TURN
+        server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
+          time: time,
+          isFinished: false,
+        })
+
         await gamesService.nextTurnOnTimeout(game.id)
 
         const refreshedGame = await gamesService.getGameById(game.id)
@@ -75,4 +90,19 @@ export function clearRoomTimer(roomTimers: RoomsTimers, gameId: string) {
 
   // Delete from memory
   delete roomTimers[gameId]
+}
+
+/**
+ * This function is called on the game end.
+ * Timer is stoped, remaining time saved and timer deleted.
+ * @param gameId
+ */
+export const stopTimer = (roomsTimers: RoomsTimers, gameId): number => {
+  const remainingTime = roomsTimers[gameId].current
+
+  // Clear timer
+  clearRoomTimer(roomsTimers, gameId)
+
+  // Return remaining time for game stats
+  return remainingTime
 }

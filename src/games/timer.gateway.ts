@@ -69,7 +69,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Timer is stoped, remaining time saved and timer deleted.
    * @param gameId
    */
-  stopTimer(gameId): number {
+  stopTimer(gameId: string): number {
     const remainingTime = this.roomsTimers[gameId].current
 
     // Clear timer

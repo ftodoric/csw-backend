@@ -2,7 +2,7 @@ import { GamePeriod } from '@games/interface/game.types'
 import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
 
-export const TURN_TIME = 30
+export const TURN_TIME = 3
 
 interface NextActives {
   nextPlayer: PlayerType
@@ -17,7 +17,7 @@ export const getNextTurnActives = (
   const nextActives: NextActives = {
     nextPlayer: PlayerType.People,
     nextSide: activeSide === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue,
-    nextPeriod: activePeriod + 1,
+    nextPeriod: activeSide === TeamSide.Red ? activePeriod + 1 : activePeriod,
   }
 
   return nextActives
