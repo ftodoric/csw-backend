@@ -1,7 +1,7 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { AuthRepository } from '@auth'
+import { AuthService } from '@auth'
 import { User } from '@auth/entities'
 import { PlayersRepository } from '@players'
 import { Player } from '@players/entities'
@@ -23,69 +23,33 @@ export class GamesService {
     @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
     @InjectRepository(PlayersRepository)
     private playersRepository: PlayersRepository,
-    @InjectRepository(AuthRepository) private authRepository: AuthRepository,
+    private authService: AuthService,
     @Inject(TeamsService) private teamsService: TeamsService,
     @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
   ) {}
 
   async createGame(gameDto: CreateGameDto, user: User): Promise<string> {
-    const electorateUser = await this.authRepository.findOneBy({
-      id: gameDto.electoratePlayer,
-    })
-    const ukPlcUser = await this.authRepository.findOneBy({
-      id: gameDto.ukPlcPlayer,
-    })
-    const ukGovernmentUser = await this.authRepository.findOneBy({
-      id: gameDto.ukGovernmentPlayer,
-    })
-    const ukEnergyUser = await this.authRepository.findOneBy({
-      id: gameDto.ukEnergyPlayer,
-    })
-    const gchqUser = await this.authRepository.findOneBy({
-      id: gameDto.gchqPlayer,
-    })
+    const electorateUser = await this.authService.getUserById(gameDto.electoratePlayer)
+    const ukPlcUser = await this.authService.getUserById(gameDto.ukPlcPlayer)
+    const ukGovernmentUser = await this.authService.getUserById(gameDto.ukGovernmentPlayer)
+    const ukEnergyUser = await this.authService.getUserById(gameDto.ukEnergyPlayer)
+    const gchqUser = await this.authService.getUserById(gameDto.gchqPlayer)
 
-    const onlineTrollsUser = await this.authRepository.findOneBy({
-      id: gameDto.onlineTrollsPlayer,
-    })
-    const energeticBearUser = await this.authRepository.findOneBy({
-      id: gameDto.energeticBearPlayer,
-    })
-    const russianGovernmentUser = await this.authRepository.findOneBy({
-      id: gameDto.russianGovernmentPlayer,
-    })
-    const rosenergoatomUser = await this.authRepository.findOneBy({
-      id: gameDto.rosenergoatomPlayer,
-    })
-    const scsUser = await this.authRepository.findOneBy({
-      id: gameDto.scsPlayer,
-    })
+    const onlineTrollsUser = await this.authService.getUserById(gameDto.onlineTrollsPlayer)
+    const energeticBearUser = await this.authService.getUserById(gameDto.energeticBearPlayer)
+    const russianGovernmentUser = await this.authService.getUserById(gameDto.russianGovernmentPlayer)
+    const rosenergoatomUser = await this.authService.getUserById(gameDto.rosenergoatomPlayer)
+    const scsUser = await this.authService.getUserById(gameDto.scsPlayer)
 
-    const electoratePlayer = await this.playersRepository.createPlayer(
-      electorateUser,
-      TeamSide.Blue,
-      PlayerType.People
-    )
-    const ukPlcPlayer = await this.playersRepository.createPlayer(
-      ukPlcUser,
-      TeamSide.Blue,
-      PlayerType.Industry
-    )
+    const electoratePlayer = await this.playersRepository.createPlayer(electorateUser, TeamSide.Blue, PlayerType.People)
+    const ukPlcPlayer = await this.playersRepository.createPlayer(ukPlcUser, TeamSide.Blue, PlayerType.Industry)
     const ukGovernmentPlayer = await this.playersRepository.createPlayer(
       ukGovernmentUser,
       TeamSide.Blue,
       PlayerType.Government
     )
-    const ukEnergyPlayer = await this.playersRepository.createPlayer(
-      ukEnergyUser,
-      TeamSide.Blue,
-      PlayerType.Energy
-    )
-    const gchqPlayer = await this.playersRepository.createPlayer(
-      gchqUser,
-      TeamSide.Blue,
-      PlayerType.Intelligence
-    )
+    const ukEnergyPlayer = await this.playersRepository.createPlayer(ukEnergyUser, TeamSide.Blue, PlayerType.Energy)
+    const gchqPlayer = await this.playersRepository.createPlayer(gchqUser, TeamSide.Blue, PlayerType.Intelligence)
 
     const onlineTrollsPlayer = await this.playersRepository.createPlayer(
       onlineTrollsUser,
@@ -107,11 +71,7 @@ export class GamesService {
       TeamSide.Red,
       PlayerType.Energy
     )
-    const scsPlayer = await this.playersRepository.createPlayer(
-      scsUser,
-      TeamSide.Red,
-      PlayerType.Intelligence
-    )
+    const scsPlayer = await this.playersRepository.createPlayer(scsUser, TeamSide.Red, PlayerType.Intelligence)
 
     // Create two teams and assign players to each team entity
     const blueTeam = await this.teamsRepository.createTeam({
@@ -180,11 +140,7 @@ export class GamesService {
       team.energyPlayer.hasMadeAction &&
       team.intelligencePlayer.hasMadeAction
     ) {
-      console.log(
-        '%clog | description\n',
-        'color: #0e8dbf; margin-bottom: 5px;',
-        'usao'
-      )
+      console.log('%clog | description\n', 'color: #0e8dbf; margin-bottom: 5px;', 'usao')
       this.nextTurnOnTimeout(gameId)
       await this.teamsService.resetAllHasMadeActions(team.id)
     }
@@ -237,10 +193,7 @@ export class GamesService {
   async nextTurnOnTimeout(gameId: string) {
     const game = await this.gamesRepository.getGameById(gameId)
 
-    const { nextSide, nextPeriod } = await getNextTurnActives(
-      game.activeSide,
-      game.activePeriod
-    )
+    const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
 
     await this.gamesRepository.save({
       id: game.id,

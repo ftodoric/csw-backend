@@ -1,14 +1,7 @@
 import { Game } from '@games/entities'
 import { Player } from '@players/entities'
 import { TeamSide } from '@teams/interface'
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class Team {

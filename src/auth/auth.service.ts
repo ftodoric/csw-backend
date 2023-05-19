@@ -18,13 +18,21 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
+  /**
+   * User registration.
+   * @param authCredentialsDto
+   * @returns {string} user ID
+   */
   async signUp(authCredentialsDto: AuthCredentialsDto): Promise<string> {
     return this.userRepository.createUser(authCredentialsDto)
   }
 
-  async logIn(
-    authCredentialsDto: AuthCredentialsDto
-  ): Promise<{ accessToken: string }> {
+  /**
+   * User log in.
+   * @param authCredentialsDto
+   * @returns {{ accessToken: string }} Access token used for authentication.
+   */
+  async logIn(authCredentialsDto: AuthCredentialsDto): Promise<{ accessToken: string }> {
     const { username, password } = authCredentialsDto
 
     const user = await this.userRepository.findOneBy({ username })
@@ -41,6 +49,6 @@ export class AuthService {
   }
 
   async getUserById(id: string): Promise<User> {
-    return this.userRepository.findOneBy({ id })
+    return this.userRepository.getUserById(id)
   }
 }

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
-import { AuthModule, AuthRepository } from '@auth'
+import { AuthModule } from '@auth'
 import { User } from '@auth/entities'
 import { PlayersModule } from '@players'
 import { Player } from '@players/entities'
@@ -16,7 +16,7 @@ import { TimerGateway } from './timer.gateway'
 
 @Module({
   controllers: [GamesController],
-  providers: [GamesService, GamesRepository, AuthRepository, TimerGateway],
+  providers: [GamesService, GamesRepository, TimerGateway],
   imports: [
     AuthModule,
     TypeOrmModule.forFeature([User]),

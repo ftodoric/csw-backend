@@ -25,7 +25,9 @@ export class AuthController {
   ): Promise<{ accessToken: string }> {
     const token = await this.authService.logIn(authCredentialsDto)
 
+    // Set a cookie for all future requests
     res.cookie('jwt', token, { httpOnly: true })
+
     return token
   }
 
@@ -33,18 +35,18 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('jwt', { httpOnly: true })
-    return { msg: 'success' }
+    return { message: 'Logged out successfully.' }
   }
 
   @Get('/me')
   @UseGuards(JwtAuthGuard)
-  async getCurrentUser(@User() user: UserEntity): Promise<UserEntity> {
+  getCurrentUser(@User() user: UserEntity): UserEntity {
     return instanceToPlain(user) as UserEntity
   }
 
   @Get('/users')
   @UseGuards(JwtAuthGuard)
-  async getAllUsers(): Promise<PublicProfileDto[]> {
+  getAllUsers(): Promise<PublicProfileDto[]> {
     return this.authService.getAllusers()
   }
 }
