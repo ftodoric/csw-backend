@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common'
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
 import * as bcrypt from 'bcrypt'
 import { DataSource, Repository } from 'typeorm'
@@ -36,8 +31,7 @@ export class AuthRepository extends Repository<User> {
       return user.id
     } catch (error) {
       // Duplicate username
-      if (error.code === '23505')
-        throw new ConflictException('Username already exists.')
+      if (error.code === '23505') throw new ConflictException('Username already exists.')
       else throw new InternalServerErrorException()
     }
   }

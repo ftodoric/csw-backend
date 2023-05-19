@@ -15,10 +15,7 @@ export class GamesController {
   constructor(private gamesService: GamesService) {}
 
   @Post()
-  createGame(
-    @Body() gameDto: CreateGameDto,
-    @User() user: UserEntity
-  ): Promise<string> {
+  createGame(@Body() gameDto: CreateGameDto, @User() user: UserEntity): Promise<string> {
     return this.gamesService.createGame(gameDto, user)
   }
 
@@ -47,9 +44,6 @@ export class GamesController {
         break
     }
 
-    await this.gamesService.setNextTurnIfLastTeamAction(
-      gameId,
-      data.entityPlayer
-    )
+    await this.gamesService.setNextTurnIfLastTeamAction(gameId, data.entityPlayer)
   }
 }

@@ -8,10 +8,7 @@ interface NextActives {
   nextPeriod: GamePeriod
 }
 
-export const getNextTurnActives = (
-  activeSide: TeamSide,
-  activePeriod: GamePeriod
-): NextActives => {
+export const getNextTurnActives = (activeSide: TeamSide, activePeriod: GamePeriod): NextActives => {
   const nextActives: NextActives = {
     nextSide: activeSide === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue,
     nextPeriod: activeSide === TeamSide.Red ? activePeriod + 1 : activePeriod,

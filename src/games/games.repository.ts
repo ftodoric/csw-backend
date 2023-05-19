@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common'
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
 import { User } from '@auth/entities'
 import { DataSource, Repository } from 'typeorm'
@@ -23,8 +18,7 @@ export class GamesRepository extends Repository<Game> {
       await this.save(game)
     } catch (error) {
       // Duplicate game
-      if (error.code === '23505')
-        throw new ConflictException('A game with that ID already exists.')
+      if (error.code === '23505') throw new ConflictException('A game with that ID already exists.')
       else throw new InternalServerErrorException()
     }
 

@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common'
+import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common'
 
 import { User } from '@auth/entities'
 import { TeamSide } from '@teams/interface'
@@ -17,11 +13,7 @@ export class PlayersRepository extends Repository<Player> {
     super(Player, dataSource.createEntityManager())
   }
 
-  async createPlayer(
-    user: User,
-    side: TeamSide,
-    playerType: PlayerType
-  ): Promise<Player> {
+  async createPlayer(user: User, side: TeamSide, playerType: PlayerType): Promise<Player> {
     const player = this.create({
       user: user,
       side,
@@ -35,8 +27,7 @@ export class PlayersRepository extends Repository<Player> {
       await this.save(player)
     } catch (error) {
       // Duplicate player
-      if (error.code === '23505')
-        throw new ConflictException('A player with that ID already exists.')
+      if (error.code === '23505') throw new ConflictException('A player with that ID already exists.')
       else throw new InternalServerErrorException()
     }
 

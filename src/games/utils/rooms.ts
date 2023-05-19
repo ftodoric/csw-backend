@@ -26,12 +26,7 @@ export const getGameIdQuery = (client: Socket) => {
 
 export const getRoomName = (gameId: string) => `room:${gameId}`
 
-export const startRoomTimer = (
-  server: Server,
-  roomsTimers: RoomsTimers,
-  game: Game,
-  gamesService: GamesService
-) => {
+export const startRoomTimer = (server: Server, roomsTimers: RoomsTimers, game: Game, gamesService: GamesService) => {
   let time: number = game.turnsRemainingTime
 
   roomsTimers[game.id] = { current: time, timer: null }
@@ -50,10 +45,7 @@ export const startRoomTimer = (
       time--
     } else {
       // Check if game ends
-      if (
-        game.activePeriod === GamePeriod.December &&
-        game.activeSide === TeamSide.Red
-      ) {
+      if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Red) {
         server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
           time: time,
           isFinished: true,

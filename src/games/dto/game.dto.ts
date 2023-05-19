@@ -1,8 +1,4 @@
-import {
-  GameStatus,
-  GameOutcome,
-  GamePeriod,
-} from '@games/interface/game.types'
+import { GameStatus, GameOutcome, GamePeriod } from '@games/interface/game.types'
 import { PlayerType } from '@players/interface'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'

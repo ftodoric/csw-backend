@@ -1,8 +1,7 @@
 import { IsOptional, IsString, MinLength } from 'class-validator'
 
 const teamNameRequirement = 'Team name is required.'
-const playerEntityAssignmentRequirement =
-  'A player must be assigned to every Entity.'
+const playerEntityAssignmentRequirement = 'A player must be assigned to every Entity.'
 
 export class CreateGameDto {
   // Blue Team

@@ -16,8 +16,7 @@ import { TeamsModule } from '@teams'
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) =>
-        typeOrmConfig(configService),
+      useFactory: async (configService: ConfigService) => typeOrmConfig(configService),
     }),
     AuthModule,
     TeamsModule,

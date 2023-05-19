@@ -1,17 +1,7 @@
-import {
-  GameStatus,
-  GameOutcome,
-  GamePeriod,
-} from '@games/interface/game.types'
+import { GameStatus, GameOutcome, GamePeriod } from '@games/interface/game.types'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm'
+import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class Game {

@@ -29,11 +29,7 @@ export class SeedService implements OnApplicationBootstrap {
     }
   }
 
-  private seedAGame(
-    blueUserId: string,
-    redUserId: string,
-    owner: User
-  ): Promise<string> {
+  private seedAGame(blueUserId: string, redUserId: string, owner: User): Promise<string> {
     return this.gamesService.createGame(
       {
         blueTeamName: 'Autobots',

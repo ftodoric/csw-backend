@@ -12,12 +12,7 @@ import { GamesService } from '@games'
 import { Server, Socket } from 'socket.io'
 
 import { RoomsTimers, TimerEvents } from './interface/timer.types'
-import {
-  clearRoomTimer,
-  getGameIdQuery,
-  getRoomName,
-  startRoomTimer,
-} from './utils/rooms'
+import { clearRoomTimer, getGameIdQuery, getRoomName, startRoomTimer } from './utils/rooms'
 
 @WebSocketGateway()
 export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -25,9 +20,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private server: Server
   private roomsTimers: RoomsTimers = {}
 
-  constructor(
-    @Inject(forwardRef(() => GamesService)) private gamesService: GamesService
-  ) {}
+  constructor(@Inject(forwardRef(() => GamesService)) private gamesService: GamesService) {}
 
   handleConnection(@ConnectedSocket() client: Socket) {
     const gameId = getGameIdQuery(client)
@@ -90,11 +83,6 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const refreshedGame = await this.gamesService.getGameById(gameId)
 
     clearRoomTimer(this.roomsTimers, gameId)
-    startRoomTimer(
-      this.server,
-      this.roomsTimers,
-      refreshedGame,
-      this.gamesService
-    )
+    startRoomTimer(this.server, this.roomsTimers, refreshedGame, this.gamesService)
   }
 }
