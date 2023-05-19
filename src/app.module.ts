@@ -6,6 +6,7 @@ import { AuthModule } from '@auth'
 import { typeOrmConfig } from '@config'
 import { GamesModule } from '@games'
 import { PlayersController, PlayersModule } from '@players'
+import { SeedModule } from '@seed'
 import { TeamsModule } from '@teams'
 
 @Module({
@@ -22,6 +23,7 @@ import { TeamsModule } from '@teams'
     TeamsModule,
     GamesModule,
     PlayersModule,
+    SeedModule,
   ],
   controllers: [PlayersController],
 })

@@ -16,7 +16,7 @@ export class AuthRepository extends Repository<User> {
     super(User, dataSource.createEntityManager())
   }
 
-  async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {
+  async createUser(authCredentialsDto: AuthCredentialsDto): Promise<string> {
     const { username, password } = authCredentialsDto
 
     // Hash password
@@ -32,6 +32,8 @@ export class AuthRepository extends Repository<User> {
         throw new ConflictException('Username already exists.')
       else throw new InternalServerErrorException()
     }
+
+    return user.id
   }
 
   async getAllUsers(): Promise<PublicProfileDto[]> {

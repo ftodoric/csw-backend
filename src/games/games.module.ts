@@ -26,5 +26,6 @@ import { TimerGateway } from './timer.gateway'
     TeamsModule,
     PlayersModule,
   ],
+  exports: [GamesService],
 })
 export class GamesModule {}

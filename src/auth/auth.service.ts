@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt'
 
 import { AuthRepository } from './auth.repository'
 import { AuthCredentialsDto, PublicProfileDto } from './dto'
+import { User } from './entities'
 import { JwtPayload } from './jwt-payload.interface'
 
 @Injectable()
@@ -17,7 +18,7 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
+  async signUp(authCredentialsDto: AuthCredentialsDto): Promise<string> {
     return this.userRepository.createUser(authCredentialsDto)
   }
 
@@ -37,5 +38,9 @@ export class AuthService {
 
   async getAllusers(): Promise<PublicProfileDto[]> {
     return this.userRepository.getAllUsers()
+  }
+
+  async getUserById(id: string): Promise<User> {
+    return this.userRepository.findOneBy({ id })
   }
 }
