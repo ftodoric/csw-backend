@@ -5,9 +5,11 @@ import {
 } from '@nestjs/common'
 
 import { User } from '@auth/entities'
+import { TeamSide } from '@teams/interface'
 import { DataSource, Repository } from 'typeorm'
 
 import { Player } from './entities'
+import { PlayerType } from './interface'
 
 @Injectable()
 export class PlayersRepository extends Repository<Player> {
@@ -15,11 +17,18 @@ export class PlayersRepository extends Repository<Player> {
     super(Player, dataSource.createEntityManager())
   }
 
-  async createPlayer(user: User): Promise<Player> {
+  async createPlayer(
+    user: User,
+    side: TeamSide,
+    playerType: PlayerType
+  ): Promise<Player> {
     const player = this.create({
       user: user,
+      side,
+      type: playerType,
       resource: 3,
       vitality: 4,
+      hasMadeAction: false,
       victoryPoints: 0,
     })
     try {

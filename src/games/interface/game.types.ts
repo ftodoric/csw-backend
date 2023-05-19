@@ -1,3 +1,5 @@
+import { Player } from '@players/entities'
+
 export enum GameStatus {
   NotStarted = 'notStarted',
   Paused = 'paused',
@@ -31,4 +33,8 @@ export enum GameAction {
   REVITALISE = 'revitalise',
   ATTACK = 'attack',
   ABSTAIN = 'abstain',
+}
+
+export interface GameActionPayload {
+  entityPlayer: Player
 }

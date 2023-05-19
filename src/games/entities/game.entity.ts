@@ -3,7 +3,6 @@ import {
   GameOutcome,
   GamePeriod,
 } from '@games/interface/game.types'
-import { PlayerType } from '@players/interface'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
 import {
@@ -44,9 +43,6 @@ export class Game {
 
   @Column()
   activeSide: TeamSide
-
-  @Column()
-  activePlayer: PlayerType
 
   @Column()
   activePeriod: GamePeriod

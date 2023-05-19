@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '@auth/jwt-auth.guard'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
-import { GameAction } from './interface/game.types'
+import { GameAction, GameActionPayload } from './interface/game.types'
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -36,16 +36,20 @@ export class GamesController {
   async action(
     @Param('id') gameId,
     @Param('type') actionType,
-    @User() user
+    @User() user,
+    @Body() data: GameActionPayload
   ): Promise<void> {
-    await this.gamesService.setNextActives(gameId, user)
-
     switch (actionType) {
       case GameAction.DISTRIBUTE:
       case GameAction.REVITALISE:
       case GameAction.ATTACK:
       case GameAction.ABSTAIN:
-        return
+        break
     }
+
+    await this.gamesService.setNextTurnIfLastTeamAction(
+      gameId,
+      data.entityPlayer
+    )
   }
 }
