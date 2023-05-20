@@ -1,7 +1,7 @@
 import { User } from '@auth/entities'
 import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class Player {
@@ -27,6 +27,5 @@ export class Player {
   hasMadeAction: boolean
 
   @ManyToOne(() => User, (user) => user.id, { eager: true })
-  @JoinColumn()
   user: User
 }

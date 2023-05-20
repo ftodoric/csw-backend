@@ -1,6 +1,5 @@
-import { Player } from '@players/entities'
 import { Exclude } from 'class-transformer'
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class User {
@@ -13,7 +12,4 @@ export class User {
   @Column()
   @Exclude({ toPlainOnly: true })
   password: string
-
-  @OneToMany(() => Player, (player) => player.id)
-  player: Player
 }
