@@ -69,15 +69,13 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
-   * Ticks for the client. Is finished is used for updating the frontend page at the final tick.
+   * Server ticks for the client game timer.
    * @param gameId
    * @param time
-   * @param isFinished is the game finished, not turn
    */
-  async handleTimerTick(gameId: string, isFinished: boolean) {
+  async handleTimerTick(gameId: string) {
     this.server.to(getRoomName(gameId)).emit(TimerEvents.Tick, {
       time: this.roomsTimers[gameId]['current'],
-      isFinished: isFinished,
     })
   }
 
@@ -90,13 +88,13 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // then send the tick to client
       await this.gamesService.setGameOver(game.id)
 
-      this.handleTimerTick(game.id, true)
+      this.handleTimerTick(game.id)
 
       // Clear timer
       clearRoomTimer(this.roomsTimers, game.id)
     } else {
       // GAME CONTINUES
-      this.handleTimerTick(game.id, false)
+      this.handleTimerTick(game.id)
 
       // This method contains clearing the timers interval and restarting it
       // because this method can be called on user action too

@@ -35,7 +35,7 @@ export const startRoomTimer = (timerGateway: TimerGateway, gameId: string, turns
     roomsTimers[gameId]['current'] = time
 
     if (time > 0) {
-      timerGateway.handleTimerTick(gameId, false)
+      timerGateway.handleTimerTick(gameId)
       time--
     } else {
       timerGateway.handleTimerTimeout(gameId)
