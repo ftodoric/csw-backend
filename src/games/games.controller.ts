@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '@auth/jwt-auth.guard'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
-import { GameAction, GameActionPayload } from './interface/game.types'
+import { GameAction, GameActionPayload, GameStatus } from './interface/game.types'
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -40,6 +40,9 @@ export class GamesController {
     const game = await this.gamesService.getGameById(gameId)
     if (data.entityPlayer.side !== game.activeSide)
       throw new BadRequestException("Action not allowed. Not player's turn.")
+
+    if (game.status !== GameStatus.InProgress)
+      throw new BadRequestException('Action not allowed. Game is not in progress.')
 
     switch (actionType) {
       case GameAction.DISTRIBUTE:
