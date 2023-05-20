@@ -1,11 +1,9 @@
-import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common'
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
-import { User } from '@auth/entities'
-import { TeamSide } from '@teams/interface'
 import { DataSource, Repository } from 'typeorm'
 
+import { CreatePlayerDto } from './dto'
 import { Player } from './entities'
-import { PlayerType } from './interface'
 
 @Injectable()
 export class PlayersRepository extends Repository<Player> {
@@ -13,7 +11,9 @@ export class PlayersRepository extends Repository<Player> {
     super(Player, dataSource.createEntityManager())
   }
 
-  async createPlayer(user: User, side: TeamSide, playerType: PlayerType): Promise<Player> {
+  async createPlayer(createPlayerDto: CreatePlayerDto): Promise<Player> {
+    const { user, side, playerType } = createPlayerDto
+
     const player = this.create({
       user: user,
       side,
@@ -23,6 +23,7 @@ export class PlayersRepository extends Repository<Player> {
       hasMadeAction: false,
       victoryPoints: 0,
     })
+
     try {
       await this.save(player)
     } catch (error) {
@@ -32,5 +33,24 @@ export class PlayersRepository extends Repository<Player> {
     }
 
     return player
+  }
+
+  async setPlayerMadeAction(playerId: string): Promise<void> {
+    try {
+      await this.save({ id: playerId, hasMadeAction: true })
+    } catch (error) {
+      throw new NotFoundException('Player with provided ID not found.')
+    }
+  }
+
+  async resetPlayerMadeAction(playerId): Promise<void> {
+    try {
+      await this.save({
+        id: playerId,
+        hasMadeAction: false,
+      })
+    } catch (error) {
+      throw new NotFoundException('Player with provided ID not found.')
+    }
   }
 }

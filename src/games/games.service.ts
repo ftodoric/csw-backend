@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 
 import { AuthService } from '@auth'
 import { User } from '@auth/entities'
-import { PlayersRepository } from '@players'
+import { PlayersService } from '@players'
 import { Player } from '@players/entities'
 import { PlayerType } from '@players/interface'
 import { TeamsRepository, TeamsService } from '@teams'
@@ -21,8 +21,7 @@ export class GamesService {
   constructor(
     @InjectRepository(GamesRepository) private gamesRepository: GamesRepository,
     @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
-    @InjectRepository(PlayersRepository)
-    private playersRepository: PlayersRepository,
+    private playersService: PlayersService,
     private authService: AuthService,
     @Inject(TeamsService) private teamsService: TeamsService,
     @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
@@ -41,37 +40,59 @@ export class GamesService {
     const rosenergoatomUser = await this.authService.getUserById(gameDto.rosenergoatomPlayer)
     const scsUser = await this.authService.getUserById(gameDto.scsPlayer)
 
-    const electoratePlayer = await this.playersRepository.createPlayer(electorateUser, TeamSide.Blue, PlayerType.People)
-    const ukPlcPlayer = await this.playersRepository.createPlayer(ukPlcUser, TeamSide.Blue, PlayerType.Industry)
-    const ukGovernmentPlayer = await this.playersRepository.createPlayer(
-      ukGovernmentUser,
-      TeamSide.Blue,
-      PlayerType.Government
-    )
-    const ukEnergyPlayer = await this.playersRepository.createPlayer(ukEnergyUser, TeamSide.Blue, PlayerType.Energy)
-    const gchqPlayer = await this.playersRepository.createPlayer(gchqUser, TeamSide.Blue, PlayerType.Intelligence)
+    // Create blue team players
+    const electoratePlayer = await this.playersService.createPlayer({
+      user: electorateUser,
+      side: TeamSide.Blue,
+      playerType: PlayerType.People,
+    })
+    const ukPlcPlayer = await this.playersService.createPlayer({
+      user: ukPlcUser,
+      side: TeamSide.Blue,
+      playerType: PlayerType.Industry,
+    })
+    const ukGovernmentPlayer = await this.playersService.createPlayer({
+      user: ukGovernmentUser,
+      side: TeamSide.Blue,
+      playerType: PlayerType.Government,
+    })
+    const ukEnergyPlayer = await this.playersService.createPlayer({
+      user: ukEnergyUser,
+      side: TeamSide.Blue,
+      playerType: PlayerType.Energy,
+    })
+    const gchqPlayer = await this.playersService.createPlayer({
+      user: gchqUser,
+      side: TeamSide.Blue,
+      playerType: PlayerType.Intelligence,
+    })
 
-    const onlineTrollsPlayer = await this.playersRepository.createPlayer(
-      onlineTrollsUser,
-      TeamSide.Red,
-      PlayerType.People
-    )
-    const energeticBearPlayer = await this.playersRepository.createPlayer(
-      energeticBearUser,
-      TeamSide.Red,
-      PlayerType.Industry
-    )
-    const russianGovernmentPlayer = await this.playersRepository.createPlayer(
-      russianGovernmentUser,
-      TeamSide.Red,
-      PlayerType.Government
-    )
-    const rosenergoatomPlayer = await this.playersRepository.createPlayer(
-      rosenergoatomUser,
-      TeamSide.Red,
-      PlayerType.Energy
-    )
-    const scsPlayer = await this.playersRepository.createPlayer(scsUser, TeamSide.Red, PlayerType.Intelligence)
+    // Create red team players
+    const onlineTrollsPlayer = await this.playersService.createPlayer({
+      user: onlineTrollsUser,
+      side: TeamSide.Red,
+      playerType: PlayerType.People,
+    })
+    const energeticBearPlayer = await this.playersService.createPlayer({
+      user: energeticBearUser,
+      side: TeamSide.Red,
+      playerType: PlayerType.Industry,
+    })
+    const russianGovernmentPlayer = await this.playersService.createPlayer({
+      user: russianGovernmentUser,
+      side: TeamSide.Red,
+      playerType: PlayerType.Government,
+    })
+    const rosenergoatomPlayer = await this.playersService.createPlayer({
+      user: rosenergoatomUser,
+      side: TeamSide.Red,
+      playerType: PlayerType.Energy,
+    })
+    const scsPlayer = await this.playersService.createPlayer({
+      user: scsUser,
+      side: TeamSide.Red,
+      playerType: PlayerType.Intelligence,
+    })
 
     // Create two teams and assign players to each team entity
     const blueTeam = await this.teamsRepository.createTeam({
@@ -128,10 +149,7 @@ export class GamesService {
     }
 
     // Find player that made an action
-    await this.playersRepository.save({
-      id: entityPlayer.id,
-      hasMadeAction: true,
-    })
+    this.playersService.setPlayerMadeAction(entityPlayer.id)
 
     if (
       team.peoplePlayer.hasMadeAction &&
