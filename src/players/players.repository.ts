@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
+import { INITIAL_RESOURCE, INITIAL_VITALITY } from '@games/config/game-mechanics'
 import { DataSource, Repository } from 'typeorm'
 
 import { CreatePlayerDto } from './dto'
@@ -18,8 +19,8 @@ export class PlayersRepository extends Repository<Player> {
       user: user,
       side,
       type: playerType,
-      resource: 3,
-      vitality: 4,
+      resource: INITIAL_RESOURCE,
+      vitality: INITIAL_VITALITY,
       hasMadeAction: false,
       victoryPoints: 0,
     })
@@ -39,7 +40,7 @@ export class PlayersRepository extends Repository<Player> {
     try {
       await this.save({ id: playerId, hasMadeAction: true })
     } catch (error) {
-      throw new NotFoundException('Player with provided ID not found.')
+      throw new NotFoundException(`Player with ID ${playerId} not found.`)
     }
   }
 
@@ -50,7 +51,7 @@ export class PlayersRepository extends Repository<Player> {
         hasMadeAction: false,
       })
     } catch (error) {
-      throw new NotFoundException('Player with provided ID not found.')
+      throw new NotFoundException(`Player with ID ${playerId} not found.`)
     }
   }
 }

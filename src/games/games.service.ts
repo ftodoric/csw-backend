@@ -6,7 +6,7 @@ import { User } from '@auth/entities'
 import { PlayersService } from '@players'
 import { Player } from '@players/entities'
 import { PlayerType } from '@players/interface'
-import { TeamsRepository, TeamsService } from '@teams'
+import { TeamsService } from '@teams'
 import { TeamSide } from '@teams/interface'
 
 import { TURN_TIME, getNextTurnActives } from './config/game-mechanics'
@@ -20,25 +20,32 @@ import { TimerGateway } from './timer.gateway'
 export class GamesService {
   constructor(
     @InjectRepository(GamesRepository) private gamesRepository: GamesRepository,
-    @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
-    private playersService: PlayersService,
     private authService: AuthService,
-    @Inject(TeamsService) private teamsService: TeamsService,
+    private teamsService: TeamsService,
+    private playersService: PlayersService,
     @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
   ) {}
 
+  /**
+   * This method creates players for each entitity, two teams with their respective player
+   * and finally a game with the two created teams.
+   * @param gameDto
+   * @param user
+   * @returns
+   */
   async createGame(gameDto: CreateGameDto, user: User): Promise<string> {
-    const electorateUser = await this.authService.getUserById(gameDto.electoratePlayer)
-    const ukPlcUser = await this.authService.getUserById(gameDto.ukPlcPlayer)
-    const ukGovernmentUser = await this.authService.getUserById(gameDto.ukGovernmentPlayer)
-    const ukEnergyUser = await this.authService.getUserById(gameDto.ukEnergyPlayer)
-    const gchqUser = await this.authService.getUserById(gameDto.gchqPlayer)
+    // Find all users
+    const electorateUser = await this.authService.getUserById(gameDto.electorateUserId)
+    const ukPlcUser = await this.authService.getUserById(gameDto.ukPlcUserId)
+    const ukGovernmentUser = await this.authService.getUserById(gameDto.ukGovernmentUserId)
+    const ukEnergyUser = await this.authService.getUserById(gameDto.ukEnergyUserId)
+    const gchqUser = await this.authService.getUserById(gameDto.gchqUserId)
 
-    const onlineTrollsUser = await this.authService.getUserById(gameDto.onlineTrollsPlayer)
-    const energeticBearUser = await this.authService.getUserById(gameDto.energeticBearPlayer)
-    const russianGovernmentUser = await this.authService.getUserById(gameDto.russianGovernmentPlayer)
-    const rosenergoatomUser = await this.authService.getUserById(gameDto.rosenergoatomPlayer)
-    const scsUser = await this.authService.getUserById(gameDto.scsPlayer)
+    const onlineTrollsUser = await this.authService.getUserById(gameDto.onlineTrollsUserId)
+    const energeticBearUser = await this.authService.getUserById(gameDto.energeticBearUserId)
+    const russianGovernmentUser = await this.authService.getUserById(gameDto.russianGovernmentUserId)
+    const rosenergoatomUser = await this.authService.getUserById(gameDto.rosenergoatomUserId)
+    const scsUser = await this.authService.getUserById(gameDto.scsUserId)
 
     // Create blue team players
     const electoratePlayer = await this.playersService.createPlayer({
@@ -95,7 +102,7 @@ export class GamesService {
     })
 
     // Create two teams and assign players to each team entity
-    const blueTeam = await this.teamsRepository.createTeam({
+    const blueTeam = await this.teamsService.createTeam({
       side: TeamSide.Blue,
       name: gameDto.blueTeamName,
       peoplePlayer: electoratePlayer,
@@ -105,7 +112,7 @@ export class GamesService {
       intelligencePlayer: gchqPlayer,
     })
 
-    const redTeam = await this.teamsRepository.createTeam({
+    const redTeam = await this.teamsService.createTeam({
       side: TeamSide.Red,
       name: gameDto.redTeamName,
       peoplePlayer: onlineTrollsPlayer,
@@ -124,7 +131,6 @@ export class GamesService {
       description: gameDto.description,
       turnsRemainingTime: TURN_TIME,
       activeSide: TeamSide.Blue,
-      activePlayer: PlayerType.People,
       activePeriod: GamePeriod.January,
     })
   }
@@ -143,9 +149,9 @@ export class GamesService {
     // Find active team
     let team
     if (game.activeSide === TeamSide.Blue) {
-      team = await this.teamsRepository.findOneBy({ id: game.blueTeam.id })
+      team = await this.teamsService.getTeamById(game.blueTeam.id)
     } else {
-      team = await this.teamsRepository.findOneBy({ id: game.redTeam.id })
+      team = await this.teamsService.getTeamById(game.redTeam.id)
     }
 
     // Find player that made an action

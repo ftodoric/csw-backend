@@ -32,18 +32,21 @@ export class SeedService implements OnApplicationBootstrap {
   private seedAGame(blueUserId: string, redUserId: string, owner: User): Promise<string> {
     return this.gamesService.createGame(
       {
+        // Blue team
         blueTeamName: 'Autobots',
-        electoratePlayer: blueUserId,
-        ukPlcPlayer: blueUserId,
-        ukGovernmentPlayer: blueUserId,
-        ukEnergyPlayer: blueUserId,
-        gchqPlayer: blueUserId,
+        electorateUserId: blueUserId,
+        ukPlcUserId: blueUserId,
+        ukGovernmentUserId: blueUserId,
+        ukEnergyUserId: blueUserId,
+        gchqUserId: blueUserId,
+
+        // Red team
         redTeamName: 'Decepticons',
-        onlineTrollsPlayer: redUserId,
-        energeticBearPlayer: redUserId,
-        russianGovernmentPlayer: redUserId,
-        rosenergoatomPlayer: redUserId,
-        scsPlayer: redUserId,
+        onlineTrollsUserId: redUserId,
+        energeticBearUserId: redUserId,
+        russianGovernmentUserId: redUserId,
+        rosenergoatomUserId: redUserId,
+        scsUserId: redUserId,
         description: 'This is War for Cybertron.',
       },
       owner

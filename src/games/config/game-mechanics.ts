@@ -3,6 +3,9 @@ import { TeamSide } from '@teams/interface'
 
 export const TURN_TIME = 30
 
+export const INITIAL_RESOURCE = 3
+export const INITIAL_VITALITY = 4
+
 interface NextActives {
   nextSide: TeamSide
   nextPeriod: GamePeriod

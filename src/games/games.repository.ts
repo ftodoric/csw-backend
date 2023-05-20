@@ -25,6 +25,12 @@ export class GamesRepository extends Repository<Game> {
     return game.id
   }
 
+  /**
+   * This method only selects important info for the frontend.
+   * For all the details about a single game, frontend fetches a single game.
+   * @param user
+   * @returns
+   */
   async getGames(user: User): Promise<Game[]> {
     const query = this.createQueryBuilder('game')
 
@@ -70,7 +76,7 @@ export class GamesRepository extends Repository<Game> {
       .innerJoin('scsPlayer.user', 'scsUser')
 
       // WHERES
-      // Only games that include the users are eligible
+      // Only games in which the user participates are eligible
       .where('electorateUser.id = :id', { id: user.id })
       .orWhere('ukPlcUser.id = :id', { id: user.id })
       .orWhere('ukGovernmentUser.id = :id', { id: user.id })
@@ -85,7 +91,7 @@ export class GamesRepository extends Repository<Game> {
   }
 
   async getGameById(id: string): Promise<Game> {
-    const game = await this.findOneBy({ id: id })
+    const game = await this.findOneBy({ id })
 
     if (!game) throw new NotFoundException(`Game with ID ${id} not found.`)
 

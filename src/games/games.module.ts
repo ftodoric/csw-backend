@@ -19,12 +19,12 @@ import { TimerGateway } from './timer.gateway'
   providers: [GamesService, GamesRepository, TimerGateway],
   imports: [
     AuthModule,
+    TeamsModule,
+    PlayersModule,
     TypeOrmModule.forFeature([User]),
     TypeOrmModule.forFeature([Player]),
     TypeOrmModule.forFeature([Team]),
     TypeOrmModule.forFeature([Game]),
-    TeamsModule,
-    PlayersModule,
   ],
   exports: [GamesService],
 })

@@ -11,23 +11,23 @@ export class CreateGameDto {
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  electoratePlayer: string
+  electorateUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  ukPlcPlayer: string
+  ukPlcUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  ukGovernmentPlayer: string
+  ukGovernmentUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  ukEnergyPlayer: string
+  ukEnergyUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  gchqPlayer: string
+  gchqUserId: string
 
   // Red Team
   @IsString()
@@ -36,23 +36,23 @@ export class CreateGameDto {
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  onlineTrollsPlayer: string
+  onlineTrollsUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  energeticBearPlayer: string
+  energeticBearUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  russianGovernmentPlayer: string
+  russianGovernmentUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  rosenergoatomPlayer: string
+  rosenergoatomUserId: string
 
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
-  scsPlayer: string
+  scsUserId: string
 
   // Description
   @IsString()

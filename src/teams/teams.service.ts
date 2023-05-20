@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 
 import { PlayersService } from '@players'
 
+import { TeamDto } from './dto'
+import { Team } from './entities'
 import { TeamsRepository } from './teams.repository'
 
 @Injectable()
@@ -11,6 +13,14 @@ export class TeamsService {
     @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
     private playersService: PlayersService
   ) {}
+
+  async createTeam(teamDto: TeamDto): Promise<Team> {
+    return this.teamsRepository.createTeam(teamDto)
+  }
+
+  async getTeamById(teamId: string): Promise<Team> {
+    return this.teamsRepository.getTeamById(teamId)
+  }
 
   async resetTeamActions(teamId: string) {
     const team = await this.teamsRepository.getTeamById(teamId)
