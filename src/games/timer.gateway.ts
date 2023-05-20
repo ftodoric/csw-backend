@@ -86,12 +86,14 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Check if game ends
     if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Red) {
+      // First update the game
+      // then send the tick to client
+      await this.gamesService.setGameOver(game.id)
+
       this.handleTimerTick(game.id, true)
 
       // Clear timer
       clearRoomTimer(this.roomsTimers, game.id)
-
-      this.gamesService.setGameOver(game.id)
     } else {
       // GAME CONTINUES
       this.handleTimerTick(game.id, false)
