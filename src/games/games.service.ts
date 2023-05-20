@@ -143,19 +143,35 @@ export class GamesService {
     return this.gamesRepository.getGameById(id)
   }
 
+  async nextTurn(gameId: string) {
+    const game = await this.gamesRepository.getGameById(gameId)
+
+    const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
+
+    await this.gamesRepository.save({
+      id: game.id,
+      // Reset and checkpoint the time
+      turnsRemainingTime: TURN_TIME,
+      // Change actives
+      activeSide: nextSide,
+      activePeriod: nextPeriod,
+    })
+
+    await this.timerGateway.handleRestartTimer(game.id)
+  }
+
   async setNextTurnIfLastTeamAction(gameId: string, entityPlayer: Player) {
-    const game = await this.getGameById(gameId)
+    // Flag the player that made an action
+    await this.playersService.setPlayerMadeAction(entityPlayer.id)
 
     // Find active team
+    const game = await this.gamesRepository.getGameById(gameId)
     let team
     if (game.activeSide === TeamSide.Blue) {
       team = await this.teamsService.getTeamById(game.blueTeam.id)
     } else {
       team = await this.teamsService.getTeamById(game.redTeam.id)
     }
-
-    // Find player that made an action
-    this.playersService.setPlayerMadeAction(entityPlayer.id)
 
     if (
       team.peoplePlayer.hasMadeAction &&
@@ -164,14 +180,13 @@ export class GamesService {
       team.energyPlayer.hasMadeAction &&
       team.intelligencePlayer.hasMadeAction
     ) {
-      console.log('%clog | description\n', 'color: #0e8dbf; margin-bottom: 5px;', 'usao')
-      this.nextTurnOnTimeout(gameId)
+      await this.nextTurn(gameId)
       await this.teamsService.resetTeamActions(team.id)
     }
   }
 
-  async setGameOver(gameId: string, remainingTime: number) {
-    const game = await this.gamesRepository.findOneBy({ id: gameId })
+  async setGameOver(gameId: string) {
+    const game = await this.getGameById(gameId)
 
     // Accumulate all victory points on each side of the team
     const blueTeamVP =
@@ -190,66 +205,21 @@ export class GamesService {
 
     // Team with more VP wins
     if (blueTeamVP > redTeamVP) {
-      await this.gamesRepository.save({
-        id: game.id,
-        outcome: GameOutcome.BlueWins,
-      })
+      await this.gamesRepository.setGameOutcome(game.id, GameOutcome.BlueVictory)
     } else if (redTeamVP > blueTeamVP) {
-      await this.gamesRepository.save({
-        id: game.id,
-        outcome: GameOutcome.RedWins,
-      })
+      await this.gamesRepository.setGameOutcome(game.id, GameOutcome.RedVictory)
     } else {
-      // TIE
-      await this.gamesRepository.save({
-        id: game.id,
-        outcome: GameOutcome.Tie,
-      })
+      await this.gamesRepository.setGameOutcome(game.id, GameOutcome.Tie)
     }
 
-    await this.gamesRepository.save({
-      id: gameId,
-      turnsRemainingTime: remainingTime,
-      status: GameStatus.Finished,
-    })
-  }
-
-  async nextTurnOnTimeout(gameId: string) {
-    const game = await this.gamesRepository.getGameById(gameId)
-
-    const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
-
-    await this.gamesRepository.save({
-      id: game.id,
-      // Reset time
-      turnsRemainingTime: TURN_TIME,
-      // Change actives
-      activeSide: nextSide,
-      activePeriod: nextPeriod,
-    })
-
-    await this.timerGateway.restartTimer(game.id)
-  }
-
-  async resetTurnsTime(gameId: string) {
-    await this.gamesRepository.save({
-      id: gameId,
-      turnsRemainingTime: TURN_TIME,
-    })
+    await this.gamesRepository.setGameStatus(game.id, GameStatus.Finished)
   }
 
   async pauseGame(gameId: string, remainingTime: number) {
-    await this.gamesRepository.save({
-      id: gameId,
-      turnsRemainingTime: remainingTime,
-      status: GameStatus.Paused,
-    })
+    this.gamesRepository.pauseGame(gameId, remainingTime)
   }
 
-  async continueGame(gameId: string) {
-    this.gamesRepository.save({
-      id: gameId,
-      status: GameStatus.InProgress,
-    })
+  continueGame(gameId: string): Promise<void> {
+    return this.gamesRepository.setGameStatus(gameId, GameStatus.InProgress)
   }
 }

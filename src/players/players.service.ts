@@ -22,7 +22,7 @@ export class PlayersService {
    * @param playerId
    */
   async setPlayerMadeAction(playerId: string): Promise<void> {
-    this.playersRepository.setPlayerMadeAction(playerId)
+    await this.playersRepository.setPlayerMadeAction(playerId)
   }
 
   async resetPlayerMadeAction(playerId: string): Promise<void> {

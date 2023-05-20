@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 
 import { User } from '@auth/decorators'
 import { User as UserEntity } from '@auth/entities'
@@ -36,6 +36,11 @@ export class GamesController {
     @User() user,
     @Body() data: GameActionPayload
   ): Promise<void> {
+    // General check for all action tpes
+    const game = await this.gamesService.getGameById(gameId)
+    if (data.entityPlayer.side !== game.activeSide)
+      throw new BadRequestException("Action not allowed. Not player's turn.")
+
     switch (actionType) {
       case GameAction.DISTRIBUTE:
       case GameAction.REVITALISE:

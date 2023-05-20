@@ -1,9 +1,6 @@
-import { Game } from '@games/entities'
-import { GamesService } from '@games/games.service'
-import { GamePeriod } from '@games/interface/game.types'
-import { RoomsTimers, TimerEvents } from '@games/interface/timer.types'
-import { TeamSide } from '@teams/interface'
-import { Server, Socket } from 'socket.io'
+import { RoomsTimers } from '@games/interface/timer.types'
+import { TimerGateway } from '@games/timer.gateway'
+import { Socket } from 'socket.io'
 
 /**
  * This function extracts gameId query parameter from
@@ -26,75 +23,33 @@ export const getGameIdQuery = (client: Socket) => {
 
 export const getRoomName = (gameId: string) => `room:${gameId}`
 
-export const startRoomTimer = (server: Server, roomsTimers: RoomsTimers, game: Game, gamesService: GamesService) => {
-  let time: number = game.turnsRemainingTime
+export const startRoomTimer = (timerGateway: TimerGateway, gameId: string, turnsRemainingTime: number) => {
+  const roomsTimers = timerGateway.getRoomsTimers()
+  let time = turnsRemainingTime
 
-  roomsTimers[game.id] = { current: time, timer: null }
+  roomsTimers[gameId] = { current: time, timer: null }
 
   // Schedule ticks for the room
   const timer = setInterval(async function () {
     // Store new time
-    roomsTimers[game.id]['current'] = time
+    roomsTimers[gameId]['current'] = time
 
     if (time > 0) {
-      server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
-        time: time,
-        isFinished: false,
-      })
-
+      timerGateway.handleTimerTick(gameId, false)
       time--
     } else {
-      // Check if game ends
-      if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Red) {
-        server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
-          time: time,
-          isFinished: true,
-        })
-
-        const remainingTime = stopTimer(roomsTimers, game.id)
-
-        gamesService.setGameOver(game.id, remainingTime)
-      } else {
-        // GAME CONTINUES
-        // NEXT TURN
-        server.to(getRoomName(game.id)).emit(TimerEvents.Tick, {
-          time: time,
-          isFinished: false,
-        })
-
-        await gamesService.nextTurnOnTimeout(game.id)
-
-        const refreshedGame = await gamesService.getGameById(game.id)
-
-        clearInterval(timer)
-        startRoomTimer(server, roomsTimers, refreshedGame, gamesService)
-      }
+      timerGateway.handleTimerTimeout(gameId)
     }
   }, 1000)
 
-  // Store this rooms timer
-  roomsTimers[game.id]['timer'] = timer
+  // Store this room timer
+  roomsTimers[gameId]['timer'] = timer
 }
 
-export function clearRoomTimer(roomTimers: RoomsTimers, gameId: string) {
+export function clearRoomTimer(roomsTimers: RoomsTimers, gameId: string) {
   // Deschedule
-  clearInterval(roomTimers[gameId]['timer'])
+  clearInterval(roomsTimers[gameId]['timer'])
 
   // Delete from memory
-  delete roomTimers[gameId]
-}
-
-/**
- * This function is called on the game end.
- * Timer is stoped, remaining time saved and timer deleted.
- * @param gameId
- */
-export const stopTimer = (roomsTimers: RoomsTimers, gameId): number => {
-  const remainingTime = roomsTimers[gameId].current
-
-  // Clear timer
-  clearRoomTimer(roomsTimers, gameId)
-
-  // Return remaining time for game stats
-  return remainingTime
+  delete roomsTimers[gameId]
 }

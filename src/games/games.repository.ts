@@ -5,6 +5,7 @@ import { DataSource, Repository } from 'typeorm'
 
 import { GameDto } from './dto'
 import { Game } from './entities'
+import { GameOutcome, GameStatus } from './interface/game.types'
 
 @Injectable()
 export class GamesRepository extends Repository<Game> {
@@ -96,5 +97,39 @@ export class GamesRepository extends Repository<Game> {
     if (!game) throw new NotFoundException(`Game with ID ${id} not found.`)
 
     return game
+  }
+
+  async setGameStatus(gameId: string, status: GameStatus): Promise<void> {
+    try {
+      this.save({
+        id: gameId,
+        status,
+      })
+    } catch (error) {
+      throw new NotFoundException(`Game with ID ${gameId} does not exist.`)
+    }
+  }
+
+  async setGameOutcome(gameId: string, outcome: GameOutcome): Promise<void> {
+    try {
+      await this.save({
+        id: gameId,
+        outcome,
+      })
+    } catch (error) {
+      throw new NotFoundException(`Game with ID ${gameId} does not exist.`)
+    }
+  }
+
+  async pauseGame(gameId: string, remainingTime: number) {
+    try {
+      await this.save({
+        id: gameId,
+        turnsRemainingTime: remainingTime,
+        status: GameStatus.Paused,
+      })
+    } catch (error) {
+      throw new NotFoundException(`Game with ID ${gameId} doesn not exist.`)
+    }
   }
 }
