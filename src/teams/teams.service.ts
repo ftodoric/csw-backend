@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { PlayersService } from '@players'
@@ -9,11 +9,11 @@ import { TeamsRepository } from './teams.repository'
 export class TeamsService {
   constructor(
     @InjectRepository(TeamsRepository) private teamsRepository: TeamsRepository,
-    @Inject(PlayersService) private playersService: PlayersService
+    private playersService: PlayersService
   ) {}
 
-  async resetAllHasMadeActions(teamId: string) {
-    const team = await this.teamsRepository.findOneBy({ id: teamId })
+  async resetTeamActions(teamId: string) {
+    const team = await this.teamsRepository.getTeamById(teamId)
 
     this.playersService.resetHasMadeAction(team.peoplePlayer.id)
     this.playersService.resetHasMadeAction(team.industryPlayer.id)

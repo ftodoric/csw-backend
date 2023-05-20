@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common'
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
 import { DataSource, Repository } from 'typeorm'
 
@@ -11,13 +11,22 @@ export class TeamsRepository extends Repository<Team> {
     super(Team, dataSource.createEntityManager())
   }
 
+  async getTeamById(id: string): Promise<Team> {
+    try {
+      const team = await this.findOneBy({ id })
+      return team
+    } catch (error) {
+      throw new NotFoundException('Team with provided ID not found.')
+    }
+  }
+
   async createTeam(teamDto: TeamDto): Promise<Team> {
     const team = this.create(teamDto)
 
     try {
       await this.save(team)
     } catch (error) {
-      throw new InternalServerErrorException()
+      throw new InternalServerErrorException('Team creation failed.')
     }
 
     return team

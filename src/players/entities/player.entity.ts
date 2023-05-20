@@ -1,16 +1,12 @@
 import { User } from '@auth/entities'
-import { Game } from '@games/entities'
 import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
-import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class Player {
   @PrimaryGeneratedColumn('uuid')
   id: string
-
-  @ManyToOne(() => User, (user) => user.id, { eager: true })
-  user: User
 
   @Column()
   side: TeamSide
@@ -30,7 +26,7 @@ export class Player {
   @Column()
   hasMadeAction: boolean
 
-  // Game in which the user is active
-  @OneToOne(() => Game, (game) => game.id)
-  game: Game
+  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @JoinColumn()
+  user: User
 }

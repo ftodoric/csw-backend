@@ -10,7 +10,7 @@ export class PlayersService {
     private playersRepository: PlayersRepository
   ) {}
 
-  async resetHasMadeAction(playerId: string) {
+  async resetHasMadeAction(playerId: string): Promise<void> {
     await this.playersRepository.save({
       id: playerId,
       hasMadeAction: false,

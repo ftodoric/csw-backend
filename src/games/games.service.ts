@@ -142,7 +142,7 @@ export class GamesService {
     ) {
       console.log('%clog | description\n', 'color: #0e8dbf; margin-bottom: 5px;', 'usao')
       this.nextTurnOnTimeout(gameId)
-      await this.teamsService.resetAllHasMadeActions(team.id)
+      await this.teamsService.resetTeamActions(team.id)
     }
   }
 

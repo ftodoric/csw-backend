@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { AuthModule } from '@auth'
 import { typeOrmConfig } from '@config'
 import { GamesModule } from '@games'
-import { PlayersController, PlayersModule } from '@players'
+import { PlayersModule } from '@players'
 import { SeedModule } from '@seed'
 import { TeamsModule } from '@teams'
 
@@ -19,11 +19,10 @@ import { TeamsModule } from '@teams'
       useFactory: async (configService: ConfigService) => typeOrmConfig(configService),
     }),
     AuthModule,
-    TeamsModule,
     GamesModule,
+    TeamsModule,
     PlayersModule,
     SeedModule,
   ],
-  controllers: [PlayersController],
 })
 export class AppModule {}

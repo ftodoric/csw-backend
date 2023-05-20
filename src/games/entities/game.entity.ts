@@ -11,14 +11,6 @@ export class Game {
   @Column()
   ownerId: string
 
-  @OneToOne(() => Team, (team) => team.id, { eager: true })
-  @JoinColumn()
-  blueTeam: Team
-
-  @OneToOne(() => Team, (team) => team.id, { eager: true })
-  @JoinColumn()
-  redTeam: Team
-
   @Column()
   status: GameStatus
 
@@ -36,4 +28,12 @@ export class Game {
 
   @Column()
   activePeriod: GamePeriod
+
+  @OneToOne(() => Team, (team) => team.id, { eager: true })
+  @JoinColumn()
+  blueTeam: Team
+
+  @OneToOne(() => Team, (team) => team.id, { eager: true })
+  @JoinColumn()
+  redTeam: Team
 }
