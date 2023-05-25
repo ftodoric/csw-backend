@@ -112,4 +112,15 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     clearRoomTimer(this.roomsTimers, gameId)
     startRoomTimer(this, gameId, game.turnsRemainingTime)
   }
+
+  /**
+   * This method is called on game end. Exported for other services.
+   */
+  async stopTimer(gameId: string) {
+    // Send one last tick to client
+    this.handleTimerTick(gameId)
+
+    // Clear timer
+    clearRoomTimer(this.roomsTimers, gameId)
+  }
 }

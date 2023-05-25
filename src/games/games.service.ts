@@ -146,18 +146,34 @@ export class GamesService {
   async nextTurn(gameId: string) {
     const game = await this.gamesRepository.getGameById(gameId)
 
-    const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
+    // Reset made actions counter to active team
+    let team
+    if (game.activeSide === TeamSide.Blue) {
+      team = await this.teamsService.getTeamById(game.blueTeam.id)
+    } else {
+      team = await this.teamsService.getTeamById(game.redTeam.id)
+    }
+    await this.teamsService.resetTeamActions(team.id)
 
-    await this.gamesRepository.save({
-      id: game.id,
-      // Reset and checkpoint the time
-      turnsRemainingTime: TURN_TIME,
-      // Change actives
-      activeSide: nextSide,
-      activePeriod: nextPeriod,
-    })
+    // Check if game ended
+    if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Red) {
+      await this.setGameOver(gameId)
 
-    await this.timerGateway.handleRestartTimer(game.id)
+      await this.timerGateway.stopTimer(gameId)
+    } else {
+      const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
+
+      await this.gamesRepository.save({
+        id: game.id,
+        // Reset and checkpoint the time
+        turnsRemainingTime: TURN_TIME,
+        // Change actives
+        activeSide: nextSide,
+        activePeriod: nextPeriod,
+      })
+
+      await this.timerGateway.handleRestartTimer(game.id)
+    }
   }
 
   async setNextTurnIfLastTeamAction(gameId: string, entityPlayer: Player) {
@@ -181,7 +197,6 @@ export class GamesService {
       team.intelligencePlayer.hasMadeAction
     ) {
       await this.nextTurn(gameId)
-      await this.teamsService.resetTeamActions(team.id)
     }
   }
 
