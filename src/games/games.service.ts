@@ -9,7 +9,7 @@ import { PlayerType } from '@players/interface'
 import { TeamsService } from '@teams'
 import { TeamSide } from '@teams/interface'
 
-import { TURN_TIME, getNextTurnActives } from './config/game-mechanics'
+import { GOVERNMENT_NEW_TURN_RESOURCE_ADDITION, TURN_TIME, getNextTurnActives } from './config/game-mechanics'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
@@ -171,6 +171,8 @@ export class GamesService {
         activeSide: nextSide,
         activePeriod: nextPeriod,
       })
+
+      await this.playersService.addResources(game[nextSide].governmentPlayer.id, GOVERNMENT_NEW_TURN_RESOURCE_ADDITION)
 
       await this.timerGateway.handleRestartTimer(game.id)
     }

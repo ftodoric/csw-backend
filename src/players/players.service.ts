@@ -28,4 +28,9 @@ export class PlayersService {
   async resetPlayerMadeAction(playerId: string): Promise<void> {
     this.playersRepository.resetPlayerMadeAction(playerId)
   }
+
+  async addResources(id: string, addition: number): Promise<void> {
+    const player = await this.playersRepository.findOneBy({ id })
+    await this.playersRepository.save({ id, resource: player.resource + addition })
+  }
 }

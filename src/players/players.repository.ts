@@ -1,10 +1,12 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
-import { INITIAL_RESOURCE, INITIAL_VITALITY } from '@games/config/game-mechanics'
+import { GOVERNMENT_NEW_TURN_RESOURCE_ADDITION, INITIAL_RESOURCE, INITIAL_VITALITY } from '@games/config/game-mechanics'
+import { TeamSide } from '@teams/interface'
 import { DataSource, Repository } from 'typeorm'
 
 import { CreatePlayerDto } from './dto'
 import { Player } from './entities'
+import { PlayerType } from './interface'
 
 @Injectable()
 export class PlayersRepository extends Repository<Player> {
@@ -15,11 +17,17 @@ export class PlayersRepository extends Repository<Player> {
   async createPlayer(createPlayerDto: CreatePlayerDto): Promise<Player> {
     const { user, side, playerType } = createPlayerDto
 
+    let initialResource = INITIAL_RESOURCE
+
+    if (side === TeamSide.Blue && playerType === PlayerType.Government) {
+      initialResource += GOVERNMENT_NEW_TURN_RESOURCE_ADDITION
+    }
+
     const player = this.create({
       user: user,
       side,
       type: playerType,
-      resource: INITIAL_RESOURCE,
+      resource: initialResource,
       vitality: INITIAL_VITALITY,
       hasMadeAction: false,
       victoryPoints: 0,
