@@ -24,7 +24,7 @@
 
 ## Description
 
-This is a backend application for a cyber security simulation game. It's development is part of a thesis on Faculty of Electric Engineering and Computing.
+This is the backend application for a cyber security simulation game. It's development is part of a thesis on Faculty of Electric Engineering and Computing.
 
 ## Requirements
 
@@ -44,11 +44,13 @@ Install all of the dependencies:
 $ yarn install
 ```
 
-Run the app:
+Make sure the Docker desktop process is running, then run the app:
 
 ```bash
 $ yarn start:reset
 ```
+
+Server is now ready. Go and run the frontend application.
 
 ## License
 
