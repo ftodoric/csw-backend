@@ -1,12 +1,14 @@
 import { GamePeriod } from '@games/interface/game.types'
 import { TeamSide } from '@teams/interface'
 
-export const TURN_TIME = 30
+export const TURN_TIME = 60 * 10
 
 export const INITIAL_RESOURCE = 3
 export const INITIAL_VITALITY = 4
 
 export const GOVERNMENT_NEW_TURN_RESOURCE_ADDITION = 3
+
+export const MAX_NUMBER_OF_RESOURCE_PER_TRANSFER = 5
 
 interface NextActives {
   nextSide: TeamSide

@@ -4,6 +4,7 @@ import { User } from '@auth/decorators'
 import { User as UserEntity } from '@auth/entities'
 import { JwtAuthGuard } from '@auth/jwt-auth.guard'
 
+import { MAX_NUMBER_OF_RESOURCE_PER_TRANSFER } from './config/game-mechanics'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
@@ -46,9 +47,31 @@ export class GamesController {
 
     switch (actionType) {
       case GameAction.DISTRIBUTE:
+        if (!data.targetPlayerId || !data.resourceAmount) {
+          throw new BadRequestException(
+            'Distribute action requires both the targeted entities player id and the amount of resource for transfer.'
+          )
+        }
+
+        // Check with max number of resource in one action
+        if (data.resourceAmount > MAX_NUMBER_OF_RESOURCE_PER_TRANSFER) {
+          throw new BadRequestException(
+            `Maximum amount of resource that can be transfered in one action is: ${MAX_NUMBER_OF_RESOURCE_PER_TRANSFER}.`
+          )
+        }
+
+        // Check if source entity player has the amount that wants to be transfered
+        if (data.entityPlayer.resource < data.resourceAmount) {
+          throw new BadRequestException('Not enough resource to transfer.')
+        }
+
+        await this.gamesService.sendResource(data.entityPlayer.id, data.targetPlayerId, data.resourceAmount)
+
+        break
       case GameAction.REVITALISE:
       case GameAction.ATTACK:
       case GameAction.ABSTAIN:
+      default:
         break
     }
 

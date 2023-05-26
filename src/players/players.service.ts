@@ -33,4 +33,11 @@ export class PlayersService {
     const player = await this.playersRepository.findOneBy({ id })
     await this.playersRepository.save({ id, resource: player.resource + addition })
   }
+
+  async sendResources(sourcePlayerId: string, targetPlayerId: string, amount: number) {
+    const sourcePlayer = await this.playersRepository.findOneBy({ id: sourcePlayerId })
+    const targetPlayer = await this.playersRepository.findOneBy({ id: targetPlayerId })
+    await this.playersRepository.save({ id: sourcePlayerId, resource: sourcePlayer.resource - amount })
+    await this.playersRepository.save({ id: targetPlayerId, resource: targetPlayer.resource + amount })
+  }
 }

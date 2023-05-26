@@ -37,4 +37,8 @@ export enum GameAction {
 
 export interface GameActionPayload {
   entityPlayer: Player
+
+  // Distribute
+  resourceAmount?: number
+  targetPlayerId?: string
 }

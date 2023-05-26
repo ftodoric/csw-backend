@@ -239,4 +239,8 @@ export class GamesService {
   continueGame(gameId: string): Promise<void> {
     return this.gamesRepository.setGameStatus(gameId, GameStatus.InProgress)
   }
+
+  async sendResource(sourcePlayerId: string, targetPlayerId: string, resourceCount: number): Promise<void> {
+    await this.playersService.sendResources(sourcePlayerId, targetPlayerId, resourceCount)
+  }
 }
