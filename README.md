@@ -24,49 +24,31 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This is a backend application for a cyber security simulation game. It's development is part of a thesis on Faculty of Electric Engineering and Computing.
+
+## Requirements
+
+- node 16
+- docker 20
 
 ## Installation
+
+Clone the repository:
+```bash
+$ git clone https://github.com/ftodoric/csw-backend
+```
+
+Install all of the dependencies:
 
 ```bash
 $ yarn install
 ```
 
-## Running the app
+Run the app:
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+$ yarn start:reset
 ```
-
-## Test
-
-```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
 ## License
 
