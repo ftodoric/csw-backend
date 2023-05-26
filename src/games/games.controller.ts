@@ -4,7 +4,11 @@ import { User } from '@auth/decorators'
 import { User as UserEntity } from '@auth/entities'
 import { JwtAuthGuard } from '@auth/jwt-auth.guard'
 
-import { MAX_NUMBER_OF_RESOURCE_PER_TRANSFER } from './config/game-mechanics'
+import {
+  MAX_AMOUNT_OF_REVITALIZATION,
+  MAX_NUMBER_OF_RESOURCE_PER_TRANSFER,
+  revitalisationConversionRate,
+} from './config/game-mechanics'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
@@ -47,9 +51,10 @@ export class GamesController {
 
     switch (actionType) {
       case GameAction.DISTRIBUTE:
+        // Check if payload has the correct data
         if (!data.targetPlayerId || !data.resourceAmount) {
           throw new BadRequestException(
-            'Distribute action requires both the targeted entities player id and the amount of resource for transfer.'
+            "Distribute action requires both the 'targetPlayerId' and the 'resourcemount' payload fields."
           )
         }
 
@@ -68,7 +73,29 @@ export class GamesController {
         await this.gamesService.sendResource(data.entityPlayer.id, data.targetPlayerId, data.resourceAmount)
 
         break
+
       case GameAction.REVITALISE:
+        // Check if the payload has the correct data
+        if (data.revitalizationAmount === undefined) {
+          throw new BadRequestException("Revitalise action requires 'revitalizationAmount' payload field.")
+        }
+
+        // Check for maximum amount that can be spent
+        if (data.revitalizationAmount > MAX_AMOUNT_OF_REVITALIZATION) {
+          throw new BadRequestException(
+            `Revitalization can be performed up to ${MAX_AMOUNT_OF_REVITALIZATION} vitality.`
+          )
+        }
+
+        // Check if user has enough resource to spend
+        if (revitalisationConversionRate[data.revitalizationAmount] > data.entityPlayer.resource) {
+          throw new BadRequestException("Player doesn't have enough resource to spend.")
+        }
+
+        await this.gamesService.revitalise(data.entityPlayer.id, data.revitalizationAmount)
+
+        break
+
       case GameAction.ATTACK:
       case GameAction.ABSTAIN:
       default:

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
+import { revitalisationConversionRate } from '@games/config/game-mechanics'
+
 import { CreatePlayerDto } from './dto'
 import { Player } from './entities'
 import { PlayersRepository } from './players.repository'
@@ -39,5 +41,15 @@ export class PlayersService {
     const targetPlayer = await this.playersRepository.findOneBy({ id: targetPlayerId })
     await this.playersRepository.save({ id: sourcePlayerId, resource: sourcePlayer.resource - amount })
     await this.playersRepository.save({ id: targetPlayerId, resource: targetPlayer.resource + amount })
+  }
+
+  async revitalise(id: string, amount: number): Promise<void> {
+    const player = await this.playersRepository.findOneBy({ id })
+
+    await this.playersRepository.save({
+      id,
+      resource: player.resource - revitalisationConversionRate[amount],
+      vitality: player.vitality + amount,
+    })
   }
 }

@@ -10,6 +10,17 @@ export const GOVERNMENT_NEW_TURN_RESOURCE_ADDITION = 3
 
 export const MAX_NUMBER_OF_RESOURCE_PER_TRANSFER = 5
 
+export const MAX_AMOUNT_OF_REVITALIZATION = 6
+
+export const revitalisationConversionRate: Record<number, number> = {
+  1: 1,
+  2: 2,
+  3: 4,
+  4: 5,
+  5: 6,
+  6: 7,
+}
+
 interface NextActives {
   nextSide: TeamSide
   nextPeriod: GamePeriod

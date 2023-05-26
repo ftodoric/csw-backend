@@ -140,7 +140,7 @@ export class GamesService {
   }
 
   async getGameById(id: string): Promise<Game> {
-    return this.gamesRepository.getGameById(id)
+    return await this.gamesRepository.getGameById(id)
   }
 
   async nextTurn(gameId: string) {
@@ -240,7 +240,11 @@ export class GamesService {
     return this.gamesRepository.setGameStatus(gameId, GameStatus.InProgress)
   }
 
-  async sendResource(sourcePlayerId: string, targetPlayerId: string, resourceCount: number): Promise<void> {
-    await this.playersService.sendResources(sourcePlayerId, targetPlayerId, resourceCount)
+  async sendResource(sourcePlayerId: string, targetPlayerId: string, resourceAmount: number): Promise<void> {
+    await this.playersService.sendResources(sourcePlayerId, targetPlayerId, resourceAmount)
+  }
+
+  async revitalise(playerId: string, revitalizationAmount: number): Promise<void> {
+    await this.playersService.revitalise(playerId, revitalizationAmount)
   }
 }

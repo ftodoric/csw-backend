@@ -41,4 +41,7 @@ export interface GameActionPayload {
   // Distribute
   resourceAmount?: number
   targetPlayerId?: string
+
+  // Revitalise
+  revitalizationAmount?: number
 }

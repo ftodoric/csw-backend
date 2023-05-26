@@ -43,14 +43,16 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * @param client
    */
   @SubscribeMessage(TimerEvents.StartTimer)
-  async handleContinueTimer(@ConnectedSocket() client: Socket): Promise<void> {
+  async handleContinueTimer(@ConnectedSocket() client: Socket): Promise<{ msg: string }> {
     const gameId = getGameIdQuery(client)
 
     const game = await this.gamesService.getGameById(gameId)
 
-    startRoomTimer(this, game.id, game.turnsRemainingTime)
+    await startRoomTimer(this, game.id, game.turnsRemainingTime)
 
-    this.gamesService.continueGame(gameId)
+    await this.gamesService.continueGame(gameId)
+
+    return { msg: 'success' }
   }
 
   /**
@@ -59,13 +61,15 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * @param client
    */
   @SubscribeMessage(TimerEvents.PauseTimer)
-  async handlePauseTimer(@ConnectedSocket() client: Socket): Promise<void> {
+  async handlePauseTimer(@ConnectedSocket() client: Socket): Promise<{ msg: string }> {
     const gameId = getGameIdQuery(client)
 
     // Persist remaining time
     await this.gamesService.pauseGame(gameId, this.roomsTimers[gameId]['current'])
 
-    clearRoomTimer(this.roomsTimers, gameId)
+    await clearRoomTimer(this.roomsTimers, gameId)
+
+    return { msg: 'success' }
   }
 
   /**
