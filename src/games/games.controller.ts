@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '@auth/jwt-auth.guard'
 import {
   MAX_AMOUNT_OF_REVITALIZATION,
   MAX_NUMBER_OF_RESOURCE_PER_TRANSFER,
+  isAttackAllowed,
   revitalisationConversionRate,
 } from './config/game-mechanics'
 import { CreateGameDto } from './dto'
@@ -97,6 +98,30 @@ export class GamesController {
         break
 
       case GameAction.ATTACK:
+        // Check if the payload has the correct data
+        if (data.resourceAmount === undefined || data.diceRoll === undefined) {
+          throw new BadRequestException("Attack action requires 'resourceAmount' and 'diceRoll' payload fields.")
+        }
+
+        // Check if the player is allowed to attack
+        if (!isAttackAllowed(game, data.entityPlayer)) {
+          throw new BadRequestException('Player is not allowed an attack.')
+        }
+
+        // Check if the player has enough resources
+        if (data.resourceAmount > data.entityPlayer.resource) {
+          throw new BadRequestException("Player doesn't have enough resource to spend.")
+        }
+
+        // Check if the dice roll is in correct boundaries
+        if (data.diceRoll > 6 || data.diceRoll < 1) {
+          throw new BadRequestException('Dice roll result not in 1 to 6 interval.')
+        }
+
+        await this.gamesService.attack(game, data.entityPlayer, data.resourceAmount, data.diceRoll)
+
+        break
+
       case GameAction.ABSTAIN:
       default:
         break

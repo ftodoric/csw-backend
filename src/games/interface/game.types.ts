@@ -44,4 +44,7 @@ export interface GameActionPayload {
 
   // Revitalise
   revitalizationAmount?: number
+
+  // Attack
+  diceRoll?: number
 }

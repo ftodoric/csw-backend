@@ -9,7 +9,14 @@ import { PlayerType } from '@players/interface'
 import { TeamsService } from '@teams'
 import { TeamSide } from '@teams/interface'
 
-import { GOVERNMENT_NEW_TURN_RESOURCE_ADDITION, TURN_TIME, getNextTurnActives } from './config/game-mechanics'
+import {
+  GOVERNMENT_NEW_TURN_RESOURCE_ADDITION,
+  TURN_TIME,
+  attackSplashMap,
+  attackTargetMap,
+  combatResolutionTable,
+  getNextTurnActives,
+} from './config/game-mechanics'
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
@@ -246,5 +253,42 @@ export class GamesService {
 
   async revitalise(playerId: string, revitalizationAmount: number): Promise<void> {
     await this.playersService.revitalise(playerId, revitalizationAmount)
+  }
+
+  async attack(game: Game, entityPlayer: Player, resourceSpent: number, diceRoll: number): Promise<void> {
+    const attackStrength = combatResolutionTable[resourceSpent - 1][diceRoll - 1]
+
+    const targetSide = entityPlayer.side === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue
+    const targetType = attackTargetMap[entityPlayer.side][entityPlayer.type]
+
+    const targetPlayerId = game[targetSide][targetType].id
+
+    // Deduce the players vitality points
+    const player =
+      attackStrength > 0
+        ? await this.playersService.reducePlayerVitality(targetPlayerId, attackStrength)
+        : await this.playersService.reducePlayerVitality(entityPlayer.id, Math.abs(attackStrength))
+
+    // If the target reaches 0, end the game
+    if (player.vitality === 0) {
+      await this.setGameOver(game.id)
+      this.timerGateway.stopTimer(game.id)
+    }
+
+    // Do the splash damage
+    attackSplashMap[player.side][player.type].forEach(async (entityType) => {
+      const splashSide = player.side
+      const splashType = entityType
+
+      const splashPlayerId = game[splashSide][splashType].id
+
+      const splashPlayer = await this.playersService.reducePlayerVitality(splashPlayerId, Math.abs(attackStrength) / 2)
+
+      // If the splash target reaches 0, end the game
+      if (splashPlayer.vitality === 0) {
+        await this.setGameOver(game.id)
+        this.timerGateway.stopTimer(game.id)
+      }
+    })
   }
 }

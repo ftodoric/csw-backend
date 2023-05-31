@@ -17,7 +17,7 @@ export class Player {
   @Column()
   resource: number
 
-  @Column()
+  @Column('decimal', { scale: 1 })
   vitality: number
 
   @Column()

@@ -52,4 +52,15 @@ export class PlayersService {
       vitality: player.vitality + amount,
     })
   }
+
+  async reducePlayerVitality(playerId: string, attackStrength: number): Promise<Player> {
+    const player = await this.playersRepository.findOneBy({ id: playerId })
+
+    await this.playersRepository.save({
+      id: playerId,
+      vitality: Math.max(player.vitality - attackStrength, 0),
+    })
+
+    return player
+  }
 }
