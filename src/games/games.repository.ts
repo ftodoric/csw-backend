@@ -16,7 +16,12 @@ export class GamesRepository extends Repository<Game> {
   async createGame(gameDto: GameDto): Promise<string> {
     const game = this.create(gameDto)
     try {
-      await this.save(game)
+      await this.save({
+        ...game,
+        isRussianGovernmentAttacked: false,
+        isUkEnergyAttacked: false,
+        isRosenergoatomAttacked: false,
+      })
     } catch (error) {
       // Duplicate game
       if (error.code === '23505') throw new ConflictException('A game with that ID already exists.')

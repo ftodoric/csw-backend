@@ -28,8 +28,8 @@ interface NextActives {
 
 export const getNextTurnActives = (activeSide: TeamSide, activePeriod: GamePeriod): NextActives => {
   const nextActives: NextActives = {
-    nextSide: activeSide === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue,
-    nextPeriod: activeSide === TeamSide.Red ? activePeriod + 1 : activePeriod,
+    nextSide: activeSide === TeamSide.Red ? TeamSide.Blue : TeamSide.Red,
+    nextPeriod: activeSide === TeamSide.Blue ? activePeriod + 1 : activePeriod,
   }
 
   return nextActives

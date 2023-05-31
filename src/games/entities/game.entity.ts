@@ -29,6 +29,15 @@ export class Game {
   @Column()
   activePeriod: GamePeriod
 
+  @Column()
+  isRussianGovernmentAttacked: boolean
+
+  @Column()
+  isUkEnergyAttacked: boolean
+
+  @Column()
+  isRosenergoatomAttacked: boolean
+
   @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()
   blueTeam: Team

@@ -130,7 +130,7 @@ export class GamesService {
       status: GameStatus.NotStarted,
       description: gameDto.description,
       turnsRemainingTime: TURN_TIME,
-      activeSide: TeamSide.Blue,
+      activeSide: TeamSide.Red,
       activePeriod: GamePeriod.January,
     })
   }
@@ -156,7 +156,7 @@ export class GamesService {
     await this.teamsService.resetTeamActions(team.id)
 
     // Check if game ended
-    if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Red) {
+    if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) {
       await this.setGameOver(gameId)
 
       await this.timerGateway.stopTimer(gameId)
