@@ -1,6 +1,8 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
+import { AssetsService } from '@assets'
+import { AssetStatus } from '@assets/interface'
 import { AuthService } from '@auth'
 import { User } from '@auth/entities'
 import { PlayersService } from '@players'
@@ -9,6 +11,7 @@ import { PlayerType } from '@players/interface'
 import { TeamsService } from '@teams'
 import { TeamSide } from '@teams/interface'
 
+import { assets } from './config/assets'
 import {
   GOVERNMENT_NEW_TURN_RESOURCE_ADDITION,
   TURN_TIME,
@@ -30,6 +33,7 @@ export class GamesService {
     private authService: AuthService,
     private teamsService: TeamsService,
     private playersService: PlayersService,
+    private assetsService: AssetsService,
     @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
   ) {}
 
@@ -130,7 +134,7 @@ export class GamesService {
     })
 
     // Create a game with both sides
-    return await this.gamesRepository.createGame({
+    const gameId = await this.gamesRepository.createGame({
       ownerId: user.id,
       blueTeam: blueTeam,
       redTeam: redTeam,
@@ -140,6 +144,21 @@ export class GamesService {
       activeSide: TeamSide.Red,
       activePeriod: GamePeriod.January,
     })
+
+    // Create all of the assets
+    // Supply a random asset to the black market on the beginning
+    const min = 0
+    const max = assets.length - 1
+    const random = Math.floor(Math.random() * (max - min) + min)
+    assets.forEach(async (asset, i) => {
+      if (i === random) {
+        await this.assetsService.createAsset({ ...asset, status: AssetStatus.Bidding }, gameId)
+      } else {
+        await this.assetsService.createAsset({ ...asset, status: AssetStatus.NotSuppliedToMarket }, gameId)
+      }
+    })
+
+    return gameId
   }
 
   async getGames(user: User): Promise<Game[]> {

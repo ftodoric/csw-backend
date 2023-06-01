@@ -9,6 +9,8 @@ import { PlayersModule } from '@players'
 import { SeedModule } from '@seed'
 import { TeamsModule } from '@teams'
 
+import { AssetsModule } from './assets/assets.module'
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,6 +25,7 @@ import { TeamsModule } from '@teams'
     TeamsModule,
     PlayersModule,
     SeedModule,
+    AssetsModule,
   ],
 })
 export class AppModule {}
