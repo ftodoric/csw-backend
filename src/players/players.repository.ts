@@ -30,6 +30,7 @@ export class PlayersRepository extends Repository<Player> {
       resource: initialResource,
       vitality: INITIAL_VITALITY,
       hasMadeAction: false,
+      hasMadeBid: false,
       victoryPoints: 0,
     })
 
@@ -57,6 +58,17 @@ export class PlayersRepository extends Repository<Player> {
       await this.save({
         id: playerId,
         hasMadeAction: false,
+      })
+    } catch (error) {
+      throw new NotFoundException(`Player with ID ${playerId} not found.`)
+    }
+  }
+
+  async resetPlayerMadeBid(playerId): Promise<void> {
+    try {
+      await this.save({
+        id: playerId,
+        hasMadeBid: false,
       })
     } catch (error) {
       throw new NotFoundException(`Player with ID ${playerId} not found.`)

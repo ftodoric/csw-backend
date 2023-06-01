@@ -25,10 +25,14 @@ export class TeamsService {
   async resetTeamActions(teamId: string) {
     const team = await this.teamsRepository.getTeamById(teamId)
 
+    // Reset has made action
     this.playersService.resetPlayerMadeAction(team.peoplePlayer.id)
     this.playersService.resetPlayerMadeAction(team.industryPlayer.id)
     this.playersService.resetPlayerMadeAction(team.governmentPlayer.id)
     this.playersService.resetPlayerMadeAction(team.energyPlayer.id)
     this.playersService.resetPlayerMadeAction(team.intelligencePlayer.id)
+
+    // Resest has made bid
+    this.playersService.resetPlayerMadeBid(team.intelligencePlayer.id)
   }
 }

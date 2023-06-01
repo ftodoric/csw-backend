@@ -26,6 +26,9 @@ export class Player {
   @Column()
   hasMadeAction: boolean
 
+  @Column()
+  hasMadeBid: boolean
+
   @ManyToOne(() => User, (user) => user.id, { eager: true })
   user: User
 }

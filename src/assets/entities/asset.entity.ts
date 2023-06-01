@@ -1,4 +1,5 @@
 import { AssetStatus, AssetType } from '@assets/interface'
+import { TeamSide } from '@teams/interface'
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
@@ -26,6 +27,12 @@ export class Asset {
 
   @Column()
   status: AssetStatus
+
+  @Column()
+  turnsFromFirstBid: number
+
+  @Column()
+  lastBidSide: TeamSide
 
   @Column()
   gameId: string

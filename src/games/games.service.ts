@@ -182,6 +182,14 @@ export class GamesService {
     }
     await this.teamsService.resetTeamActions(team.id)
 
+    // Determine whether a team gets an asset
+    await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
+
+    // Supply another asset to the market every month
+    if (game.activeSide === TeamSide.Blue) {
+      await this.assetsService.supplyAssetToMarket(gameId)
+    }
+
     // Check if game ended
     if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) {
       await this.setGameOver(gameId)
@@ -318,5 +326,16 @@ export class GamesService {
 
   async getTeamAssets(gameId: string, teamSide: TeamSide): Promise<Asset[]> {
     return await this.assetsService.getTeamAssets(gameId, teamSide)
+  }
+
+  async makeAssetBid(assetId: string, bidAmount: number, side: TeamSide, playerId: string): Promise<void> {
+    // Raise madeBid flag
+    await this.playersService.madeBid(playerId)
+
+    // Take the players resource
+    await this.playersService.reducePlayerResource(playerId, bidAmount)
+
+    // Place the bid
+    await this.assetsService.makeBid(assetId, side, bidAmount)
   }
 }

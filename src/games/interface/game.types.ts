@@ -1,4 +1,5 @@
 import { Player } from '@players/entities'
+import { TeamSide } from '@teams/interface'
 
 export enum GameStatus {
   NotStarted = 'notStarted',
@@ -33,6 +34,7 @@ export enum GameAction {
   REVITALISE = 'revitalise',
   ATTACK = 'attack',
   ABSTAIN = 'abstain',
+  ACCESS_BLACK_MARKET = 'accessBlackMarket',
 }
 
 export interface GameActionPayload {
@@ -47,4 +49,10 @@ export interface GameActionPayload {
 
   // Attack
   diceRoll?: number
+}
+
+export interface BidPayload {
+  teamSide: TeamSide
+  bid: number
+  entityPlayer: Player
 }

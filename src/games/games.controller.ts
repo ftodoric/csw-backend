@@ -15,7 +15,7 @@ import {
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
-import { GameAction, GameActionPayload, GameStatus } from './interface/game.types'
+import { BidPayload, GameAction, GameActionPayload, GameStatus } from './interface/game.types'
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -119,6 +119,7 @@ export class GamesController {
 
         break
 
+      case GameAction.ACCESS_BLACK_MARKET:
       case GameAction.ABSTAIN:
       default:
         break
@@ -134,6 +135,23 @@ export class GamesController {
 
   @Get('/:id/assets/:teamSide')
   async getTeamsAssets(@Param('id') gameId, @Param('teamSide') teamSide: TeamSide): Promise<Asset[]> {
+    // Check if game exists
+
+    // Check if team side is correct
+    if (teamSide !== TeamSide.Blue && teamSide !== TeamSide.Red) {
+      throw new BadRequestException('Team side is incorrect.')
+    }
+
     return this.gamesService.getTeamAssets(gameId, teamSide)
+  }
+
+  @Post('/bid/:assetId')
+  async makeAssetBid(@Param('assetId') assetId: string, @Body() data: BidPayload): Promise<void> {
+    // Check if payload correct
+    if (data.bid === undefined || data.teamSide === undefined || data.entityPlayer === undefined) {
+      throw new BadRequestException("Bid payload requires 'bid' and 'teamSide'.")
+    }
+
+    await this.gamesService.makeAssetBid(assetId, data.bid, data.teamSide, data.entityPlayer.id)
   }
 }

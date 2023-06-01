@@ -1,10 +1,10 @@
 export enum AssetStatus {
-  NotSuppliedToMarket,
-  Bidding,
-  Secured,
+  NotSuppliedToMarket = 'notSuppliedToMarket',
+  Bidding = 'bidding',
+  Secured = 'secured',
 }
 
 export enum AssetType {
-  Attack,
-  Defence,
+  Attack = 'attack',
+  Defence = 'defence',
 }

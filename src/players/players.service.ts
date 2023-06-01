@@ -31,6 +31,10 @@ export class PlayersService {
     this.playersRepository.resetPlayerMadeAction(playerId)
   }
 
+  async resetPlayerMadeBid(playerId: string): Promise<void> {
+    this.playersRepository.resetPlayerMadeBid(playerId)
+  }
+
   async addResources(id: string, addition: number): Promise<void> {
     const player = await this.playersRepository.findOneBy({ id })
     await this.playersRepository.save({ id, resource: player.resource + addition })
@@ -62,5 +66,21 @@ export class PlayersService {
     })
 
     return player
+  }
+
+  async madeBid(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      hasMadeBid: true,
+    })
+  }
+
+  async reducePlayerResource(playerId: string, amount: number): Promise<void> {
+    const player = await this.playersRepository.findOneBy({ id: playerId })
+
+    await this.playersRepository.save({
+      id: playerId,
+      resource: player.resource - amount,
+    })
   }
 }
