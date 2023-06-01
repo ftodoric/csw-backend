@@ -2,6 +2,7 @@ import { Inject, Injectable, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { AssetsService } from '@assets'
+import { Asset } from '@assets/entities'
 import { AssetStatus } from '@assets/interface'
 import { AuthService } from '@auth'
 import { User } from '@auth/entities'
@@ -309,5 +310,13 @@ export class GamesService {
         this.timerGateway.stopTimer(game.id)
       }
     })
+  }
+
+  async getBlackMarketAssets(gameId: string): Promise<Asset[]> {
+    return await this.assetsService.getBlackMarketAssets(gameId)
+  }
+
+  async getTeamAssets(gameId: string, teamSide: TeamSide): Promise<Asset[]> {
+    return await this.assetsService.getTeamAssets(gameId, teamSide)
   }
 }

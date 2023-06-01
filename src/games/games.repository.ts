@@ -16,9 +16,9 @@ export class GamesRepository extends Repository<Game> {
   async createGame(gameDto: GameDto): Promise<string> {
     const game = this.create(gameDto)
 
-    let gameId
+    let gameWithId
     try {
-      gameId = await this.save({
+      gameWithId = await this.save({
         ...game,
         isRussianGovernmentAttacked: false,
         isUkEnergyAttacked: false,
@@ -30,7 +30,7 @@ export class GamesRepository extends Repository<Game> {
       else throw new InternalServerErrorException()
     }
 
-    return gameId
+    return gameWithId.id
   }
 
   /**

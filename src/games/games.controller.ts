@@ -1,8 +1,10 @@
 import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 
+import { Asset } from '@assets/entities'
 import { User } from '@auth/decorators'
 import { User as UserEntity } from '@auth/entities'
 import { JwtAuthGuard } from '@auth/jwt-auth.guard'
+import { TeamSide } from '@teams/interface'
 
 import {
   MAX_AMOUNT_OF_REVITALIZATION,
@@ -36,12 +38,7 @@ export class GamesController {
   }
 
   @Post('/:id/action/:type')
-  async action(
-    @Param('id') gameId,
-    @Param('type') actionType,
-    @User() user,
-    @Body() data: GameActionPayload
-  ): Promise<void> {
+  async action(@Param('id') gameId, @Param('type') actionType, @Body() data: GameActionPayload): Promise<void> {
     // General check for all action tpes
     const game = await this.gamesService.getGameById(gameId)
     if (data.entityPlayer.side !== game.activeSide)
@@ -128,5 +125,15 @@ export class GamesController {
     }
 
     await this.gamesService.setNextTurnIfLastTeamAction(gameId, data.entityPlayer)
+  }
+
+  @Get('/:id/blackMarket')
+  async getBlackMarketAssets(@Param('id') gameId): Promise<Asset[]> {
+    return this.gamesService.getBlackMarketAssets(gameId)
+  }
+
+  @Get('/:id/assets/:teamSide')
+  async getTeamsAssets(@Param('id') gameId, @Param('teamSide') teamSide: TeamSide): Promise<Asset[]> {
+    return this.gamesService.getTeamAssets(gameId, teamSide)
   }
 }
