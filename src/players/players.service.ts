@@ -53,7 +53,8 @@ export class PlayersService {
     await this.playersRepository.save({
       id,
       resource: player.resource - revitalisationConversionRate[amount],
-      vitality: player.vitality + amount,
+      // Postgre decimal returns as a string
+      vitality: Number(player.vitality) + amount,
     })
   }
 

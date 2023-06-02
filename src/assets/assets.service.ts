@@ -32,9 +32,9 @@ export class AssetsService {
     await this.assetsRepository.save({
       id,
       [teamBidKey]: bidAmount,
-      // This increments on every turn FOR assets that are bid on
+      // This increments on every turn for assets that are bid on
       // Only the first time must this be set to 1 to start the count
-      turnsFromFirstBid: asset.turnsFromFirstBid === 0 ? 1 : 0,
+      turnsFromFirstBid: asset.turnsFromFirstBid === 0 ? 1 : asset.turnsFromFirstBid,
       lastBidSide: side,
     })
   }
