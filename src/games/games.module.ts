@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { AssetsModule } from '@assets'
@@ -15,7 +15,7 @@ import { TimerGateway } from './timer.gateway'
 @Module({
   controllers: [GamesController],
   providers: [GamesService, GamesRepository, TimerGateway],
-  imports: [AuthModule, TypeOrmModule.forFeature([Game]), TeamsModule, PlayersModule, AssetsModule],
+  imports: [AuthModule, TypeOrmModule.forFeature([Game]), TeamsModule, forwardRef(() => PlayersModule), AssetsModule],
   exports: [GamesService],
 })
 export class GamesModule {}

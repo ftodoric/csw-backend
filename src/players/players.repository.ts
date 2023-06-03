@@ -29,9 +29,12 @@ export class PlayersRepository extends Repository<Player> {
       type: playerType,
       resource: initialResource,
       vitality: INITIAL_VITALITY,
-      hasMadeAction: false,
-      hasMadeBid: false,
       victoryPoints: 0,
+      hasMadeAction: false,
+      biddingBanRemainingTurns: 0,
+      hasMadeBid: false,
+      attackBanRemainingTurns: 0,
+      paralysisRemainingTurns: 0,
     })
 
     try {

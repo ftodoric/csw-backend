@@ -33,7 +33,7 @@ export class GamesService {
     @InjectRepository(GamesRepository) private gamesRepository: GamesRepository,
     private authService: AuthService,
     private teamsService: TeamsService,
-    private playersService: PlayersService,
+    @Inject(forwardRef(() => PlayersService)) private playersService: PlayersService,
     private assetsService: AssetsService,
     @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
   ) {}
@@ -190,6 +190,9 @@ export class GamesService {
       await this.assetsService.supplyAssetToMarket(gameId)
     }
 
+    // Reduce counters for all active bans for previous active team
+    await this.playersService.decrementConditionCounters(gameId, game.activeSide)
+
     // Check if game ended
     if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) {
       await this.setGameOver(gameId)
@@ -297,27 +300,54 @@ export class GamesService {
         ? await this.playersService.reducePlayerVitality(targetPlayerId, attackStrength)
         : await this.playersService.reducePlayerVitality(entityPlayer.id, Math.abs(attackStrength))
 
-    // If the target reaches 0, end the game
-    if (player.vitality === 0) {
-      await this.setGameOver(game.id)
-      this.timerGateway.stopTimer(game.id)
-    }
-
     // Do the splash damage
-    attackSplashMap[player.side][player.type].forEach(async (entityType) => {
+    // Use regular for loop for synchronicity
+    for (let i = 0; i < attackSplashMap[player.side][player.type].length; i++) {
       const splashSide = player.side
-      const splashType = entityType
+      const splashType = attackSplashMap[player.side][player.type][i]
 
       const splashPlayerId = game[splashSide][splashType].id
 
-      const splashPlayer = await this.playersService.reducePlayerVitality(splashPlayerId, Math.abs(attackStrength) / 2)
+      await this.playersService.reducePlayerVitality(splashPlayerId, Math.abs(attackStrength) / 2)
+    }
 
-      // If the splash target reaches 0, end the game
-      if (splashPlayer.vitality === 0) {
-        await this.setGameOver(game.id)
-        this.timerGateway.stopTimer(game.id)
+    // Attribution level
+    // Apply effects or assign assets to a team
+    await this.determineAttributionLevel(game.id, attackStrength, entityPlayer.side, entityPlayer.type)
+
+    // Check for 0 vitalities
+    // If encountered, end the game
+    let attackEndedTheGame = false
+    const refreshedGame = await this.getGameById(game.id)
+    const playerTypes = Object.values(PlayerType)
+
+    for (let i = 0; i < playerTypes.length; i++) {
+      const vitality = Number(refreshedGame[TeamSide.Blue][playerTypes[i]].vitality)
+      if (vitality === 0) {
+        attackEndedTheGame = true
+        // If Red Team attacked, reward Red Team 10 VP
+        // If Blue Team attacked and caused some of it's own entities to drop to 0, do not reward anyone
+        if (entityPlayer.side === TeamSide.Red) {
+          await this.playersService.addVictoryPoints(game[entityPlayer.side][entityPlayer.type].id, 10)
+        }
+        break
       }
-    })
+    }
+    for (let i = 0; i < playerTypes.length; i++) {
+      const vitality = Number(refreshedGame[TeamSide.Blue][playerTypes[i]].vitality)
+      if (vitality === 0) {
+        attackEndedTheGame = true
+        // Reward Blue Team 10 VP
+        if (entityPlayer.side === TeamSide.Blue) {
+          await this.playersService.addVictoryPoints(game[entityPlayer.side][entityPlayer.type].id, 10)
+        }
+      }
+    }
+
+    if (attackEndedTheGame) {
+      await this.setGameOver(game.id)
+      await this.timerGateway.stopTimer(game.id)
+    }
   }
 
   async getBlackMarketAssets(gameId: string): Promise<Asset[]> {
@@ -337,5 +367,138 @@ export class GamesService {
 
     // Place the bid
     await this.assetsService.makeBid(assetId, side, bidAmount)
+  }
+
+  /**
+   * To give an asset to one team, asset must not be already secured. In that case, no asset is given.
+   *
+   * First, check if any assets exist that are not yet bid on, assign one of those.
+   *
+   * Second, if there are only available assets that are in bidding process, cancel the bidding process
+   * and assign it as a penalty.
+   * @param attackStrength
+   * @param side
+   * @param playerType
+   */
+  async determineAttributionLevel(
+    gameId: string,
+    attackStrength: number,
+    side: TeamSide,
+    playerType: PlayerType
+  ): Promise<void> {
+    // -1 PENALTIES
+    if (attackStrength === -1) {
+      // Red Team penalties
+      if (side === TeamSide.Red) {
+        // -1 Penalty for Energetic Bear or SCS
+        // UK gains Software Update asset.
+        if (playerType === PlayerType.Industry || playerType === PlayerType.Intelligence) {
+          this.giveAssetToTeam(gameId, 'Software Update', TeamSide.Blue)
+        }
+
+        // -1 Penalty for Online Trolls
+        // UK gains Education asset.
+        if (playerType === PlayerType.People) {
+          this.giveAssetToTeam(gameId, 'Education', TeamSide.Blue)
+        }
+
+        // -1 Penalty for SCS
+        // SCS cannot bid on Black Market for 2 turns.
+        if (playerType === PlayerType.Intelligence) {
+          // Add a ban to queue
+          // When set to negative value, next turn turns it to its equivalent positive to mark beginning of the ban
+          await this.playersService.banBidding(gameId, side, playerType, -2)
+        }
+      }
+
+      // Blue Team penalties
+      else {
+        // -1 Penalty for GCHQ
+        // GCHQ cannot launch attacks for 2 turns.
+        if (playerType === PlayerType.Intelligence) {
+          await this.playersService.banAttack(gameId, side, playerType, -2)
+        }
+
+        // -1 Penalty for UK Government
+        // Russia gains Bargaining Chip asset.
+        if (playerType === PlayerType.Government) {
+          this.giveAssetToTeam(gameId, 'Bargaining Chip', TeamSide.Red)
+        }
+      }
+    }
+
+    // -2 PENALTIES
+    else if (attackStrength === -2) {
+      // Red Team penalties
+      if (side === TeamSide.Red) {
+        // -2 Penalty for Energetic Bear
+        // UK gains Software Update and Recovery Management assets.
+        if (playerType === PlayerType.Industry) {
+          this.giveAssetToTeam(gameId, 'Software Update', TeamSide.Blue)
+          this.giveAssetToTeam(gameId, 'Recovery Management', TeamSide.Blue)
+        }
+
+        // -2 Penalty for Online Trolls
+        // UK gains Education asset, Online Trolls cannot launch attacks for 2 turns.
+        if (playerType === PlayerType.People) {
+          this.giveAssetToTeam(gameId, 'Education', TeamSide.Blue)
+          await this.playersService.banAttack(gameId, side, playerType, -2)
+        }
+
+        // -2 Penalty for SCS
+        // UK may choose to open up GCHQ-Rosenergoatom or UK Government-Russia Government attack vector at no cost.
+        // This penalty does not give 'Attack Vector' asset, only a free additional option
+        if (playerType === PlayerType.Intelligence) {
+          // TODO
+        }
+      }
+
+      // Blue Team penalties
+      else {
+        // -2 Penalty for GCHQ
+        // GCHQ cannot perform any actions for 2 turns, UK Government loses 1 Vitality.
+        if (playerType === PlayerType.Intelligence) {
+          this.playersService.paralyze(gameId, side, playerType, -2)
+
+          const game = await this.getGameById(gameId)
+          await this.playersService.reducePlayerVitality(game[TeamSide.Blue][PlayerType.Government].id, 1)
+        }
+
+        // -2 Penalty for UK Government
+        // Russia gains Bargaining Chip asset, UK Government lose additional 2 Vitality and 2 Resource.
+        if (playerType === PlayerType.Government) {
+          this.giveAssetToTeam(gameId, 'Bargaining Chip', TeamSide.Red)
+
+          const game = await this.getGameById(gameId)
+          await this.playersService.reducePlayerVitality(game[TeamSide.Blue][PlayerType.Government].id, 2)
+          await this.playersService.reducePlayerResource(game[TeamSide.Blue][PlayerType.Government].id, 2)
+        }
+      }
+    }
+  }
+
+  async giveAssetToTeam(gameId: string, assetName: string, teamToGive: TeamSide): Promise<void> {
+    let assetIdToGive: string | null = null
+
+    const notBidOnAssets = await this.assetsService.getNotBidOnAssets(gameId)
+    for (let i = 0; i < notBidOnAssets.length; i++) {
+      if (notBidOnAssets[i].name === assetName) {
+        assetIdToGive = notBidOnAssets[i].id
+      }
+    }
+
+    const bidOnAssets = await this.assetsService.getBidOnAssets(gameId)
+    if (assetIdToGive === null) {
+      for (let i = 0; i < bidOnAssets.length; i++) {
+        if (bidOnAssets[i].name === assetName) {
+          assetIdToGive = bidOnAssets[i].id
+        }
+      }
+    }
+
+    // Give the asset if there is any
+    if (assetIdToGive !== null) {
+      await this.assetsService.giveAssetToTeam(assetIdToGive, teamToGive)
+    }
   }
 }

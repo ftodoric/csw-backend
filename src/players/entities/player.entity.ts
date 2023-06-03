@@ -27,7 +27,16 @@ export class Player {
   hasMadeAction: boolean
 
   @Column()
+  biddingBanRemainingTurns: number
+
+  @Column()
   hasMadeBid: boolean
+
+  @Column()
+  attackBanRemainingTurns: number
+
+  @Column()
+  paralysisRemainingTurns: number
 
   @ManyToOne(() => User, (user) => user.id, { eager: true })
   user: User

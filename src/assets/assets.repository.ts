@@ -50,6 +50,22 @@ export class AssetsRepository extends Repository<Asset> {
     return query.getMany()
   }
 
+  async getNotBidOnAssets(gameId: string): Promise<Asset[]> {
+    const query = this.createQueryBuilder('asset')
+      .where('asset.gameId = :gameId', { gameId })
+      .andWhere('asset.turnsFromFirstBid = 0')
+
+    return query.getMany()
+  }
+
+  async getBidOnAssets(gameId: string): Promise<Asset[]> {
+    const query = this.createQueryBuilder('asset')
+      .where('asset.gameId = :gameId', { gameId })
+      .andWhere('asset.turnsFromFirstBid <> 0')
+
+    return query.getMany()
+  }
+
   async getTeamAssets(gameId: string, teamSide: TeamSide): Promise<Asset[]> {
     const opponentSide = teamSide === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue
     const bidWhereClause = `asset.${teamSide}Bid > asset.${opponentSide}Bid`

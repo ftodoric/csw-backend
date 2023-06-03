@@ -24,6 +24,14 @@ export class AssetsService {
     return await this.assetsRepository.getTeamAssets(gameId, teamSide)
   }
 
+  async getNotBidOnAssets(gameId: string): Promise<Asset[]> {
+    return await this.assetsRepository.getNotBidOnAssets(gameId)
+  }
+
+  async getBidOnAssets(gameId: string): Promise<Asset[]> {
+    return await this.assetsRepository.getBidOnAssets(gameId)
+  }
+
   async makeBid(id: string, side: TeamSide, bidAmount: number): Promise<void> {
     const teamBidKey = `${[side]}Bid`
 
@@ -59,7 +67,7 @@ export class AssetsService {
     const assets = await this.assetsRepository.getUnsuppliedAssets(gameId)
 
     const min = 0
-    const max = assets.length - 1
+    const max = assets.length
     const random = Math.floor(Math.random() * (max - min) + min)
 
     assets.forEach((asset, i) => {
@@ -70,6 +78,18 @@ export class AssetsService {
           status: AssetStatus.Bidding,
         })
       }
+    })
+  }
+
+  async giveAssetToTeam(assetId: string, side: TeamSide) {
+    const blueTeamBid = side === TeamSide.Blue ? 1 : 0
+    const redTeamBid = side === TeamSide.Red ? 1 : 0
+
+    await this.assetsRepository.save({
+      id: assetId,
+      status: AssetStatus.Secured,
+      blueTeamBid,
+      redTeamBid,
     })
   }
 }
