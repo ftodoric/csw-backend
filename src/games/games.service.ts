@@ -199,11 +199,6 @@ export class GamesService {
     }
 
     // Recovery management
-    console.log(
-      '%clog | description\n',
-      'color: #0e8dbf; margin-bottom: 5px;',
-      game.blueTeam.industryPlayer.hasSufferedAnyDamage
-    )
     if (game.isRecoveryManagementActive && game.blueTeam.industryPlayer.hasSufferedAnyDamage) {
       await this.playersService.addVitality(game.blueTeam.industryPlayer.id, 1)
     }
