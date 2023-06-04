@@ -1,4 +1,4 @@
-import { GameStatus, GameOutcome, GamePeriod } from '@games/interface/game.types'
+import { GameEntity, GameOutcome, GamePeriod, GameStatus } from '@games/interface/game.types'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
@@ -37,6 +37,21 @@ export class Game {
 
   @Column()
   isRosenergoatomAttacked: boolean
+
+  @Column({ nullable: true })
+  lastAttacker: GameEntity
+
+  @Column({ nullable: true })
+  lastAttackStrength: number
+
+  @Column()
+  didGCHQRevitaliseThisQuarter: boolean
+
+  @Column()
+  recruitmentDriveCurrentQuartersStreak: number
+
+  @Column()
+  recruitmentDriveMaxQuartersStreak: number
 
   @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()

@@ -15,6 +15,7 @@ import { TeamSide } from '@teams/interface'
 import { assets } from './config/assets'
 import {
   GOVERNMENT_NEW_TURN_RESOURCE_ADDITION,
+  INITIAL_VITALITY,
   TURN_TIME,
   attackSplashMap,
   attackTargetMap,
@@ -26,6 +27,7 @@ import { Game } from './entities'
 import { GamesRepository } from './games.repository'
 import { GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
 import { TimerGateway } from './timer.gateway'
+import { gameEntityMap } from './utils/utils'
 
 @Injectable()
 export class GamesService {
@@ -193,6 +195,11 @@ export class GamesService {
     // Reduce counters for all active bans for previous active team
     await this.playersService.decrementConditionCounters(gameId, game.activeSide)
 
+    // After every month check for objectives
+    if (game.activeSide === TeamSide.Blue) {
+      await this.checkMonthlyObjectives(gameId, game.activePeriod)
+    }
+
     // Check if game ended
     if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) {
       await this.setGameOver(gameId)
@@ -241,7 +248,22 @@ export class GamesService {
   }
 
   async setGameOver(gameId: string) {
-    const game = await this.getGameById(gameId)
+    let game = await this.getGameById(gameId)
+
+    // 1. FINAL OBJECTIVES
+    // UK Government - Agressive Outlook
+    const russianGovernmentVitality = Number(game.redTeam.governmentPlayer.vitality)
+    if (russianGovernmentVitality < INITIAL_VITALITY) {
+      await this.playersService.addVictoryPoints(game.blueTeam.governmentPlayer.id, 5)
+    }
+
+    // GCHQ - Recruitment Drive
+    // Check the streak and award accordingly
+    const recruitmentDriveBonus = Math.max(2 * game.recruitmentDriveMaxQuartersStreak - 1, 0)
+    await this.playersService.addVictoryPoints(game.blueTeam.intelligencePlayer.id, recruitmentDriveBonus)
+
+    // 2. POINTS CALCULATION
+    game = await this.getGameById(gameId)
 
     // Accumulate all victory points on each side of the team
     const blueTeamVP =
@@ -280,10 +302,25 @@ export class GamesService {
 
   async sendResource(sourcePlayerId: string, targetPlayerId: string, resourceAmount: number): Promise<void> {
     await this.playersService.sendResources(sourcePlayerId, targetPlayerId, resourceAmount)
+
+    // Electorate objective - Resist the Drain
+    const player = await this.playersService.getPlayerById(sourcePlayerId)
+    if (player.side == TeamSide.Blue && player.type === PlayerType.People) {
+      this.playersService.addVictoryPoints(player.id, -1)
+    }
   }
 
-  async revitalise(playerId: string, revitalizationAmount: number): Promise<void> {
+  async revitalise(gameId: string, playerId: string, revitalizationAmount: number): Promise<void> {
     await this.playersService.revitalise(playerId, revitalizationAmount)
+
+    // Raise GCHQ flag for Recruitment Drive objective
+    const game = await this.gamesRepository.getGameById(gameId)
+    if (playerId === game.blueTeam.intelligencePlayer.id) {
+      await this.gamesRepository.save({
+        id: gameId,
+        didGCHQRevitaliseThisQuarter: true,
+      })
+    }
   }
 
   async attack(game: Game, entityPlayer: Player, resourceSpent: number, diceRoll: number): Promise<void> {
@@ -322,7 +359,7 @@ export class GamesService {
     const playerTypes = Object.values(PlayerType)
 
     for (let i = 0; i < playerTypes.length; i++) {
-      const vitality = Number(refreshedGame[TeamSide.Blue][playerTypes[i]].vitality)
+      const vitality = Number(refreshedGame.blueTeam[playerTypes[i]].vitality)
       if (vitality === 0) {
         attackEndedTheGame = true
         // If Red Team attacked, reward Red Team 10 VP
@@ -334,7 +371,7 @@ export class GamesService {
       }
     }
     for (let i = 0; i < playerTypes.length; i++) {
-      const vitality = Number(refreshedGame[TeamSide.Blue][playerTypes[i]].vitality)
+      const vitality = Number(refreshedGame.blueTeam[playerTypes[i]].vitality)
       if (vitality === 0) {
         attackEndedTheGame = true
         // Reward Blue Team 10 VP
@@ -348,6 +385,12 @@ export class GamesService {
       await this.setGameOver(game.id)
       await this.timerGateway.stopTimer(game.id)
     }
+
+    await this.gamesRepository.save({
+      id: game.id,
+      lastAttacker: gameEntityMap(entityPlayer.side, entityPlayer.type),
+      lastAttackStrength: attackStrength,
+    })
   }
 
   async getBlackMarketAssets(gameId: string): Promise<Asset[]> {
@@ -461,7 +504,7 @@ export class GamesService {
           this.playersService.paralyze(gameId, side, playerType, -2)
 
           const game = await this.getGameById(gameId)
-          await this.playersService.reducePlayerVitality(game[TeamSide.Blue][PlayerType.Government].id, 1)
+          await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 1)
         }
 
         // -2 Penalty for UK Government
@@ -470,8 +513,8 @@ export class GamesService {
           this.giveAssetToTeam(gameId, 'Bargaining Chip', TeamSide.Red)
 
           const game = await this.getGameById(gameId)
-          await this.playersService.reducePlayerVitality(game[TeamSide.Blue][PlayerType.Government].id, 2)
-          await this.playersService.reducePlayerResource(game[TeamSide.Blue][PlayerType.Government].id, 2)
+          await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 2)
+          await this.playersService.reducePlayerResource(game.blueTeam.governmentPlayer.id, 2)
         }
       }
     }
@@ -499,6 +542,46 @@ export class GamesService {
     // Give the asset if there is any
     if (assetIdToGive !== null) {
       await this.assetsService.giveAssetToTeam(assetIdToGive, teamToGive)
+    }
+  }
+
+  async checkMonthlyObjectives(gameId: string, activePeriod: GamePeriod): Promise<void> {
+    const game = await this.getGameById(gameId)
+
+    // UK Government - Election Time
+    if (game.blueTeam.peoplePlayer.resource >= 4) {
+      await this.playersService.addVictoryPoints(game.blueTeam.governmentPlayer.id, 1)
+    }
+
+    // UK PLC - Weather the Brexit storm
+    if (activePeriod === GamePeriod.April && game.blueTeam.industryPlayer.resource >= 3) {
+      await this.playersService.addVictoryPoints(game.blueTeam.industryPlayer.id, 2)
+    } else if (activePeriod === GamePeriod.August && game.blueTeam.industryPlayer.resource >= 6) {
+      await this.playersService.addVictoryPoints(game.blueTeam.industryPlayer.id, 3)
+    } else if (activePeriod === GamePeriod.December && game.blueTeam.industryPlayer.resource >= 9) {
+      await this.playersService.addVictoryPoints(game.blueTeam.industryPlayer.id, 4)
+    }
+
+    // GCHQ - Recruitment Drive streak
+    if (activePeriod === GamePeriod.March) {
+      await this.gamesRepository.adjustQuarterlyRecruitmentDriveStreak(gameId)
+    }
+    if (activePeriod === GamePeriod.June) {
+      await this.gamesRepository.adjustQuarterlyRecruitmentDriveStreak(gameId)
+    }
+    if (activePeriod === GamePeriod.September) {
+      await this.gamesRepository.adjustQuarterlyRecruitmentDriveStreak(gameId)
+    }
+    if (activePeriod === GamePeriod.December) {
+      await this.gamesRepository.adjustQuarterlyRecruitmentDriveStreak(gameId)
+    }
+
+    // UK Energy - Grow Capacity
+    if (activePeriod === GamePeriod.June && game.blueTeam.energyPlayer.vitality >= 6) {
+      await this.playersService.addVictoryPoints(game.blueTeam.energyPlayer.id, 2)
+    }
+    if (activePeriod === GamePeriod.December && game.blueTeam.energyPlayer.vitality >= 9) {
+      await this.playersService.addVictoryPoints(game.blueTeam.energyPlayer.id, 3)
     }
   }
 }

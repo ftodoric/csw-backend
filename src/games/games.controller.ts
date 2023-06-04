@@ -56,10 +56,10 @@ export class GamesController {
           )
         }
 
-        // Check with max number of resource in one action
-        if (data.resourceAmount > MAX_NUMBER_OF_RESOURCE_PER_TRANSFER) {
+        // Check resource amount
+        if (data.resourceAmount <= 0 || data.resourceAmount > MAX_NUMBER_OF_RESOURCE_PER_TRANSFER) {
           throw new BadRequestException(
-            `Maximum amount of resource that can be transfered in one action is: ${MAX_NUMBER_OF_RESOURCE_PER_TRANSFER}.`
+            `Maximum amount of resource that can be transfered in one action is: ${MAX_NUMBER_OF_RESOURCE_PER_TRANSFER} and minimum of 1.`
           )
         }
 
@@ -90,7 +90,7 @@ export class GamesController {
           throw new BadRequestException("Player doesn't have enough resource to spend.")
         }
 
-        await this.gamesService.revitalise(data.entityPlayer.id, data.revitalizationAmount)
+        await this.gamesService.revitalise(gameId, data.entityPlayer.id, data.revitalizationAmount)
 
         break
 

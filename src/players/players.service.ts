@@ -22,6 +22,10 @@ export class PlayersService {
     return this.playersRepository.createPlayer(createPlayerDto)
   }
 
+  async getPlayerById(id: string): Promise<Player> {
+    return await this.playersRepository.getPlayerById(id)
+  }
+
   /**
    * Each entity players has a flag that indicated whether he made an action during ths turn.
    * This is that setter.
@@ -86,6 +90,15 @@ export class PlayersService {
     await this.playersRepository.save({
       id: playerId,
       resource: player.resource - amount,
+    })
+  }
+
+  async addVictoryPoints(playerId: string, amount: number): Promise<void> {
+    const player = await this.playersRepository.findOneBy({ id: playerId })
+
+    await this.playersRepository.save({
+      id: playerId,
+      victoryPoints: player.victoryPoints + amount,
     })
   }
 
@@ -211,14 +224,5 @@ export class PlayersService {
         paralysisRemainingTurns: newParalysisRemainingTurns,
       })
     }
-  }
-
-  async addVictoryPoints(playerId: string, amount: number): Promise<void> {
-    const player = await this.playersRepository.findOneBy({ id: playerId })
-
-    await this.playersRepository.save({
-      id: playerId,
-      victoryPoints: player.victoryPoints + amount,
-    })
   }
 }

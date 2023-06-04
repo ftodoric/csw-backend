@@ -48,6 +48,14 @@ export class PlayersRepository extends Repository<Player> {
     return player
   }
 
+  async getPlayerById(id: string): Promise<Player> {
+    const player = await this.findOneBy({ id })
+
+    if (!player) throw new NotFoundException(`Player with ID ${id} not found.`)
+
+    return player
+  }
+
   async setPlayerMadeAction(playerId: string): Promise<void> {
     try {
       await this.save({ id: playerId, hasMadeAction: true })

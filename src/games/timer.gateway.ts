@@ -9,10 +9,8 @@ import {
 } from '@nestjs/websockets'
 
 import { GamesService } from '@games'
-import { TeamSide } from '@teams/interface'
 import { Server, Socket } from 'socket.io'
 
-import { GamePeriod } from './interface/game.types'
 import { RoomsTimers, TimerEvents } from './interface/timer.types'
 import { clearRoomTimer, getGameIdQuery, getRoomName, startRoomTimer } from './utils/rooms'
 
@@ -87,23 +85,9 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const game = await this.gamesService.getGameById(gameId)
 
     // Check if game ends
-    if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Red) {
-      // First update the game
-      // then send the tick to client
-      await this.gamesService.setGameOver(game.id)
-
-      this.handleTimerTick(game.id)
-
-      // Clear timer
-      clearRoomTimer(this.roomsTimers, game.id)
-    } else {
-      // GAME CONTINUES
-      this.handleTimerTick(game.id)
-
-      // This method contains clearing the timers interval and restarting it
-      // because this method can be called on user action too
-      await this.gamesService.nextTurn(game.id)
-    }
+    // First update the game
+    // then send the tick to client
+    await this.gamesService.nextTurn(game.id)
   }
 
   /**
@@ -112,6 +96,9 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   async handleRestartTimer(gameId: string) {
     const game = await this.gamesService.getGameById(gameId)
+
+    // Send a tick to client
+    this.handleTimerTick(gameId)
 
     clearRoomTimer(this.roomsTimers, gameId)
     startRoomTimer(this, gameId, game.turnsRemainingTime)

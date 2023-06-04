@@ -23,6 +23,9 @@ export class GamesRepository extends Repository<Game> {
         isRussianGovernmentAttacked: false,
         isUkEnergyAttacked: false,
         isRosenergoatomAttacked: false,
+        recruitmentDriveCurrentQuartersStreak: 0,
+        recruitmentDriveMaxQuartersStreak: 0,
+        didGCHQRevitaliseThisQuarter: false,
       })
     } catch (error) {
       // Duplicate game
@@ -138,5 +141,24 @@ export class GamesRepository extends Repository<Game> {
     } catch (error) {
       throw new NotFoundException(`Game with ID ${gameId} doesn not exist.`)
     }
+  }
+
+  async adjustQuarterlyRecruitmentDriveStreak(gameId: string): Promise<void> {
+    const { didGCHQRevitaliseThisQuarter, recruitmentDriveCurrentQuartersStreak, recruitmentDriveMaxQuartersStreak } =
+      await this.getGameById(gameId)
+
+    const newRecruitmentDriveCurrentQuartersStreak = didGCHQRevitaliseThisQuarter
+      ? recruitmentDriveCurrentQuartersStreak + 1
+      : 0
+
+    await this.save({
+      id: gameId,
+      didGCHQRevitaliseThisQuarter: false,
+      recruitmentDriveCurrentQuartersStreak: newRecruitmentDriveCurrentQuartersStreak,
+      recruitmentDriveMaxQuartersStreak:
+        newRecruitmentDriveCurrentQuartersStreak > recruitmentDriveMaxQuartersStreak
+          ? newRecruitmentDriveCurrentQuartersStreak
+          : recruitmentDriveMaxQuartersStreak,
+    })
   }
 }

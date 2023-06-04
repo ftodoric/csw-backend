@@ -56,3 +56,19 @@ export interface BidPayload {
   bid: number
   entityPlayer: Player
 }
+
+export enum GameEntity {
+  // Blue Team
+  UKGovernment = 'ukGovernment',
+  Electorate = 'electorate',
+  UKPLC = 'ukPlc',
+  UKEnergy = 'ukEnergy',
+  GCHQ = 'gchq',
+
+  // Red Team
+  RussianGovernment = 'russianGovernment',
+  OnlineTrolls = 'onlineTrolls',
+  EnergeticBear = 'energeticBear',
+  Rosenergoatom = 'rosenergoatom',
+  SCS = 'scs',
+}
