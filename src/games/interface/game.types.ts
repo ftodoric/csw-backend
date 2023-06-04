@@ -1,4 +1,5 @@
 import { Player } from '@players/entities'
+import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
 
 export enum GameStatus {
@@ -55,6 +56,11 @@ export interface BidPayload {
   teamSide: TeamSide
   bid: number
   entityPlayer: Player
+}
+
+export interface AssetActivationPayload {
+  teamSide: TeamSide
+  attackVectorTarget?: PlayerType
 }
 
 export enum GameEntity {

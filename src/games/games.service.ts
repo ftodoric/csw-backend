@@ -27,7 +27,7 @@ import { Game } from './entities'
 import { GamesRepository } from './games.repository'
 import { GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
 import { TimerGateway } from './timer.gateway'
-import { gameEntityMap } from './utils/utils'
+import { calculateDamage, gameEntityMap } from './utils/utils'
 
 @Injectable()
 export class GamesService {
@@ -175,14 +175,12 @@ export class GamesService {
   async nextTurn(gameId: string) {
     const game = await this.gamesRepository.getGameById(gameId)
 
-    // Reset made actions counter to active team
     let team
     if (game.activeSide === TeamSide.Blue) {
       team = await this.teamsService.getTeamById(game.blueTeam.id)
     } else {
       team = await this.teamsService.getTeamById(game.redTeam.id)
     }
-    await this.teamsService.resetTeamActions(team.id)
 
     // Determine whether a team gets an asset
     await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
@@ -199,6 +197,22 @@ export class GamesService {
     if (game.activeSide === TeamSide.Blue) {
       await this.checkMonthlyObjectives(gameId, game.activePeriod)
     }
+
+    // Recovery management
+    console.log(
+      '%clog | description\n',
+      'color: #0e8dbf; margin-bottom: 5px;',
+      game.blueTeam.industryPlayer.hasSufferedAnyDamage
+    )
+    if (game.isRecoveryManagementActive && game.blueTeam.industryPlayer.hasSufferedAnyDamage) {
+      await this.playersService.addVitality(game.blueTeam.industryPlayer.id, 1)
+    }
+
+    // Reset made actions counter to active team
+    await this.teamsService.resetTeamActions(team.id)
+
+    // Reset flags for both teams
+    await this.teamsService.resetBothTeamsActions(game.blueTeam.id, game.redTeam.id)
 
     // Check if game ended
     if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) {
@@ -262,6 +276,11 @@ export class GamesService {
     const recruitmentDriveBonus = Math.max(2 * game.recruitmentDriveMaxQuartersStreak - 1, 0)
     await this.playersService.addVictoryPoints(game.blueTeam.intelligencePlayer.id, recruitmentDriveBonus)
 
+    // Rosenergoatom - Grow capacity
+    // Check the streak and award accordingly
+    const growCapacityBonus = Math.max(2 * game.growCapacityMaxQuartersStreak - 1, 0)
+    await this.playersService.addVictoryPoints(game.redTeam.energyPlayer.id, growCapacityBonus)
+
     // 2. POINTS CALCULATION
     game = await this.getGameById(gameId)
 
@@ -314,11 +333,18 @@ export class GamesService {
     await this.playersService.revitalise(playerId, revitalizationAmount)
 
     // Raise GCHQ flag for Recruitment Drive objective
+    // or
+    // Rosenergoatom for Grow Cpacity objective
     const game = await this.gamesRepository.getGameById(gameId)
     if (playerId === game.blueTeam.intelligencePlayer.id) {
       await this.gamesRepository.save({
         id: gameId,
         didGCHQRevitaliseThisQuarter: true,
+      })
+    } else if (playerId === game.redTeam.energyPlayer.id) {
+      await this.gamesRepository.save({
+        id: gameId,
+        didRosenergoatomRevitaliseThisQuarter: true,
       })
     }
   }
@@ -326,16 +352,41 @@ export class GamesService {
   async attack(game: Game, entityPlayer: Player, resourceSpent: number, diceRoll: number): Promise<void> {
     const attackStrength = combatResolutionTable[resourceSpent - 1][diceRoll - 1]
 
+    // Russian Government objective - Control the Trolls
+    const isOnlineTrolls = entityPlayer.side === TeamSide.Red && entityPlayer.type === PlayerType.People
+    if (isOnlineTrolls) {
+      if (resourceSpent === 3 || resourceSpent === 4) {
+        await this.playersService.addVictoryPoints(game.redTeam.governmentPlayer.id, -1)
+      } else if (resourceSpent === 5 || resourceSpent === 6) {
+        await this.playersService.addVictoryPoints(game.redTeam.governmentPlayer.id, -2)
+      }
+    }
+
     const targetSide = entityPlayer.side === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue
     const targetType = attackTargetMap[entityPlayer.side][entityPlayer.type]
 
     const targetPlayerId = game[targetSide][targetType].id
 
+    // Apply armor
+    let damage
+    if (attackStrength > 0) {
+      damage = calculateDamage(
+        attackStrength,
+        game[targetSide][targetType].armor,
+        game[targetSide][targetType].armorDuration
+      )
+    } else {
+      damage = calculateDamage(Math.abs(attackStrength), entityPlayer.armor, entityPlayer.armorDuration)
+    }
+
     // Deduce the players vitality points
     const player =
       attackStrength > 0
-        ? await this.playersService.reducePlayerVitality(targetPlayerId, attackStrength)
-        : await this.playersService.reducePlayerVitality(entityPlayer.id, Math.abs(attackStrength))
+        ? await this.playersService.reducePlayerVitality(targetPlayerId, damage)
+        : await this.playersService.reducePlayerVitality(entityPlayer.id, damage)
+
+    // Reduce attackers resource
+    await this.playersService.reducePlayerResource(entityPlayer.id, resourceSpent)
 
     // Do the splash damage
     // Use regular for loop for synchronicity
@@ -345,7 +396,14 @@ export class GamesService {
 
       const splashPlayerId = game[splashSide][splashType].id
 
-      await this.playersService.reducePlayerVitality(splashPlayerId, Math.abs(attackStrength) / 2)
+      // Apply armor
+      damage = calculateDamage(
+        Math.abs(attackStrength),
+        game[splashSide][splashType].armor,
+        game[splashSide][splashType].armorDuration
+      )
+
+      await this.playersService.reducePlayerVitality(splashPlayerId, damage / 2)
     }
 
     // Attribution level
@@ -583,5 +641,89 @@ export class GamesService {
     if (activePeriod === GamePeriod.December && game.blueTeam.energyPlayer.vitality >= 9) {
       await this.playersService.addVictoryPoints(game.blueTeam.energyPlayer.id, 3)
     }
+
+    // Russian Government - Some animals are more equal than others
+    if (game.redTeam.governmentPlayer.resource >= 3) {
+      await this.playersService.addVictoryPoints(game.redTeam.governmentPlayer.id, 1)
+    }
+
+    // Energetic Bear = Those who can't, steal
+    if (activePeriod === GamePeriod.April && game.redTeam.industryPlayer.vitality > INITIAL_VITALITY) {
+      await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 1)
+      await this.gamesRepository.setEnergeticBearAprilVitality(game.id, Number(game.redTeam.industryPlayer.vitality))
+    }
+    if (activePeriod === GamePeriod.August && game.redTeam.industryPlayer.vitality > game.energeticBearAprilVitality) {
+      await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 3)
+      await this.gamesRepository.setEnergeticBearAugustVitality(game.id, Number(game.redTeam.industryPlayer.vitality))
+    }
+    if (
+      activePeriod === GamePeriod.December &&
+      game.redTeam.industryPlayer.vitality > game.energeticBearAugustVitality
+    ) {
+      await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 5)
+    }
+
+    // SCS - Win the arms race
+    if (await this.assetsService.hasRussiaMoreAttackAssetsThanUKDefenceAssets(gameId)) {
+      await this.playersService.addVictoryPoints(game.redTeam.intelligencePlayer.id, 2)
+    }
+
+    // Rosenergoatom - Grow Capacity streak
+    if (activePeriod === GamePeriod.March) {
+      await this.gamesRepository.adjustQuarterlyGrowCapacityStreak(gameId)
+    }
+    if (activePeriod === GamePeriod.June) {
+      await this.gamesRepository.adjustQuarterlyGrowCapacityStreak(gameId)
+    }
+    if (activePeriod === GamePeriod.September) {
+      await this.gamesRepository.adjustQuarterlyGrowCapacityStreak(gameId)
+    }
+    if (activePeriod === GamePeriod.December) {
+      await this.gamesRepository.adjustQuarterlyGrowCapacityStreak(gameId)
+    }
+  }
+
+  // ASSET ACTIVATIONS
+  async activateAttackVector(gameId: string, teamSide: TeamSide, attackVectorTarget: PlayerType): Promise<void> {
+    switch (attackVectorTarget) {
+      case PlayerType.Government:
+        this.gamesRepository.save({
+          id: gameId,
+          isRussianGovernmentAttacked: true,
+        })
+        break
+
+      case PlayerType.Energy:
+        if (teamSide === TeamSide.Blue) {
+          this.gamesRepository.save({
+            id: gameId,
+            isRosenergoatomAttacked: true,
+          })
+        } else {
+          this.gamesRepository.save({
+            id: gameId,
+            isUkEnergyAttacked: true,
+          })
+        }
+        break
+
+      default:
+        break
+    }
+  }
+
+  // Electorate suffers half of any damage for 3 turns
+  async activateEducation(gameId: string): Promise<void> {
+    const { blueTeam } = await this.gamesRepository.getGameById(gameId)
+    await this.playersService.activateArmor(blueTeam.peoplePlayer.id, 50, 3)
+  }
+
+  // If UK PLC suffered any damage this turn, increase vitality by 1
+  async activateRecoveryManagement(gameId: string): Promise<void> {
+    await this.gamesRepository.save({ id: gameId, isRecoveryManagementActive: true })
+  }
+
+  async setAssetActivated(assetId: string): Promise<void> {
+    await this.assetsService.setAssetStatus(assetId, AssetStatus.Activated)
   }
 }

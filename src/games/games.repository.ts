@@ -23,9 +23,15 @@ export class GamesRepository extends Repository<Game> {
         isRussianGovernmentAttacked: false,
         isUkEnergyAttacked: false,
         isRosenergoatomAttacked: false,
+        didGCHQRevitaliseThisQuarter: false,
         recruitmentDriveCurrentQuartersStreak: 0,
         recruitmentDriveMaxQuartersStreak: 0,
-        didGCHQRevitaliseThisQuarter: false,
+        energeticBearAprilVitality: 0,
+        energeticBearAugustVitality: 0,
+        didRosenergoatomRevitaliseThisQuarter: false,
+        growCapacityCurrentQuartersStreak: 0,
+        growCapacityMaxQuartersStreak: 0,
+        isRecoveryManagementActive: false,
       })
     } catch (error) {
       // Duplicate game
@@ -160,5 +166,32 @@ export class GamesRepository extends Repository<Game> {
           ? newRecruitmentDriveCurrentQuartersStreak
           : recruitmentDriveMaxQuartersStreak,
     })
+  }
+
+  async adjustQuarterlyGrowCapacityStreak(gameId: string): Promise<void> {
+    const { didRosenergoatomRevitaliseThisQuarter, growCapacityCurrentQuartersStreak, growCapacityMaxQuartersStreak } =
+      await this.getGameById(gameId)
+
+    const newGrowCapacityCurrentQuartersStreak = didRosenergoatomRevitaliseThisQuarter
+      ? growCapacityCurrentQuartersStreak + 1
+      : 0
+
+    await this.save({
+      id: gameId,
+      didRosenergoatomRevitaliseThisQuarter: false,
+      growCapacityCurrentQuartersStreak: newGrowCapacityCurrentQuartersStreak,
+      growCapacityMaxQuartersStreak:
+        newGrowCapacityCurrentQuartersStreak > growCapacityMaxQuartersStreak
+          ? newGrowCapacityCurrentQuartersStreak
+          : growCapacityMaxQuartersStreak,
+    })
+  }
+
+  async setEnergeticBearAprilVitality(gameId: string, vitality: number): Promise<void> {
+    await this.save({ id: gameId, energeticBearAprilVitality: vitality })
+  }
+
+  async setEnergeticBearAugustVitality(gameId: string, vitality: number): Promise<void> {
+    await this.save({ id: gameId, energeticBearAugustVitality: vitality })
   }
 }

@@ -35,6 +35,9 @@ export class PlayersRepository extends Repository<Player> {
       hasMadeBid: false,
       attackBanRemainingTurns: 0,
       paralysisRemainingTurns: 0,
+      armor: 0,
+      armorDuration: 0,
+      hasSufferedAnyDamage: false,
     })
 
     try {
@@ -80,6 +83,17 @@ export class PlayersRepository extends Repository<Player> {
       await this.save({
         id: playerId,
         hasMadeBid: false,
+      })
+    } catch (error) {
+      throw new NotFoundException(`Player with ID ${playerId} not found.`)
+    }
+  }
+
+  async resetPlayerSufferedDamage(playerId): Promise<void> {
+    try {
+      await this.save({
+        id: playerId,
+        hasSufferedAnyDamage: false,
       })
     } catch (error) {
       throw new NotFoundException(`Player with ID ${playerId} not found.`)

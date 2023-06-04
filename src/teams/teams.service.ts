@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { PlayersService } from '@players'
+import { PlayerType } from '@players/interface'
 
 import { TeamDto } from './dto'
 import { Team } from './entities'
@@ -25,14 +26,27 @@ export class TeamsService {
   async resetTeamActions(teamId: string) {
     const team = await this.teamsRepository.getTeamById(teamId)
 
-    // Reset has made action
-    this.playersService.resetPlayerMadeAction(team.peoplePlayer.id)
-    this.playersService.resetPlayerMadeAction(team.industryPlayer.id)
-    this.playersService.resetPlayerMadeAction(team.governmentPlayer.id)
-    this.playersService.resetPlayerMadeAction(team.energyPlayer.id)
-    this.playersService.resetPlayerMadeAction(team.intelligencePlayer.id)
+    const playerTypes = Object.values(PlayerType)
 
-    // Resest has made bid
-    this.playersService.resetPlayerMadeBid(team.intelligencePlayer.id)
+    for (let i = 0; i < playerTypes.length; i++) {
+      // Reset has made action
+      await this.playersService.resetPlayerMadeAction(team[playerTypes[i]].id)
+
+      // Resest has made bid
+      await this.playersService.resetPlayerMadeBid(team[playerTypes[i]].id)
+    }
+  }
+
+  async resetBothTeamsActions(blueTeamId: string, redTeamId: string) {
+    const blueTeam = await this.teamsRepository.getTeamById(blueTeamId)
+    const redTeam = await this.teamsRepository.getTeamById(redTeamId)
+
+    const playerTypes = Object.values(PlayerType)
+
+    for (let i = 0; i < playerTypes.length; i++) {
+      // Reset suffered damage flag
+      await this.playersService.resetPlayerSufferedDamage(blueTeam[playerTypes[i]].id)
+      await this.playersService.resetPlayerSufferedDamage(redTeam[playerTypes[i]].id)
+    }
   }
 }

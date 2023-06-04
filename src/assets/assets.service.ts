@@ -92,4 +92,18 @@ export class AssetsService {
       redTeamBid,
     })
   }
+
+  async hasRussiaMoreAttackAssetsThanUKDefenceAssets(gameId: string): Promise<boolean> {
+    const ukDefenceAssetsCount = await this.assetsRepository.getUkDefenceAssetsCount(gameId)
+    const russiaAttackAssetsCount = await this.assetsRepository.getRussiaAttackAssetsCount(gameId)
+
+    return russiaAttackAssetsCount > ukDefenceAssetsCount
+  }
+
+  async setAssetStatus(assetId: string, status: AssetStatus): Promise<void> {
+    await this.assetsRepository.save({
+      id: assetId,
+      status,
+    })
+  }
 }

@@ -38,6 +38,19 @@ export class Player {
   @Column()
   paralysisRemainingTurns: number
 
+  /**
+   * Damage mitigating modifier. Resulting damage is calculated as (100 - armor) / 100 * attack.
+   * Initial value: 0
+   */
+  @Column()
+  armor: number
+
+  @Column()
+  armorDuration: number
+
+  @Column()
+  hasSufferedAnyDamage: boolean
+
   @ManyToOne(() => User, (user) => user.id, { eager: true })
   user: User
 }

@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 
 import { Asset } from '@assets/entities'
+import { AssetName } from '@assets/interface'
 import { User } from '@auth/decorators'
 import { User as UserEntity } from '@auth/entities'
 import { JwtAuthGuard } from '@auth/jwt-auth.guard'
@@ -15,7 +16,7 @@ import {
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
-import { BidPayload, GameAction, GameActionPayload, GameStatus } from './interface/game.types'
+import { AssetActivationPayload, BidPayload, GameAction, GameActionPayload, GameStatus } from './interface/game.types'
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -153,5 +154,64 @@ export class GamesController {
     }
 
     await this.gamesService.makeAssetBid(assetId, data.bid, data.teamSide, data.entityPlayer.id)
+  }
+
+  @Post('/:gameId/activateAsset/:assetId')
+  async activateAsset(
+    @Param('gameId') gameId: string,
+    @Param('assetId') assetId,
+    @Body() data: AssetActivationPayload
+  ): Promise<void> {
+    // Check if team side is in the payload
+    if (data.teamSide === undefined) {
+      throw new BadRequestException("Activation of asset requires 'teamSide' field.")
+    }
+
+    // Check if it's team's turn
+    const game = await this.gamesService.getGameById(gameId)
+    if (data.teamSide !== game.activeSide) {
+      throw new BadRequestException("It's not teams turn.")
+    }
+
+    // Check if requested asset is in team possesion
+    const teamAssets = await this.gamesService.getTeamAssets(gameId, data.teamSide)
+    let isTeamsAsset = false
+    let assetName
+    for (let i = 0; i < teamAssets.length; i++) {
+      if (teamAssets[i].id === assetId) {
+        isTeamsAsset = true
+        assetName = teamAssets[i].name
+      }
+    }
+
+    if (!isTeamsAsset) {
+      throw new BadRequestException('Team does not posses the asset of requested activation.')
+    }
+
+    // Determine the asset
+    switch (assetName) {
+      case AssetName.AttackVector:
+        // Check if payload contains 'attackVectorTarget'
+        if (data.attackVectorTarget === undefined) {
+          throw new BadRequestException("To activate Attack Vector asset, 'attackVectorTarget' is required in payload.")
+        }
+
+        await this.gamesService.activateAttackVector(gameId, data.teamSide, data.attackVectorTarget)
+        break
+
+      case AssetName.Education:
+        await this.gamesService.activateEducation(gameId)
+        break
+
+      case AssetName.RecoveryManagement:
+        await this.gamesService.activateRecoveryManagement(gameId)
+        break
+
+      default:
+        break
+    }
+
+    // Set the asset status
+    await this.gamesService.setAssetActivated(assetId)
   }
 }

@@ -22,3 +22,8 @@ export const gameEntityMap = (teamSide: TeamSide, playerType: PlayerType) => {
       return isBlue ? GameEntity.GCHQ : GameEntity.SCS
   }
 }
+
+export const calculateDamage = (attackStrength: number, armor: number, armorDuration: number) => {
+  const appliedArmor = armorDuration > 0 ? armor : 0
+  return ((100 - appliedArmor) / 100) * attackStrength
+}

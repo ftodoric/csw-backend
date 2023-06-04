@@ -36,16 +36,25 @@ export class PlayersService {
   }
 
   async resetPlayerMadeAction(playerId: string): Promise<void> {
-    this.playersRepository.resetPlayerMadeAction(playerId)
+    await this.playersRepository.resetPlayerMadeAction(playerId)
   }
 
   async resetPlayerMadeBid(playerId: string): Promise<void> {
-    this.playersRepository.resetPlayerMadeBid(playerId)
+    await this.playersRepository.resetPlayerMadeBid(playerId)
+  }
+
+  async resetPlayerSufferedDamage(playerId: string): Promise<void> {
+    await this.playersRepository.resetPlayerSufferedDamage(playerId)
   }
 
   async addResources(id: string, addition: number): Promise<void> {
     const player = await this.playersRepository.findOneBy({ id })
     await this.playersRepository.save({ id, resource: player.resource + addition })
+  }
+
+  async addVitality(id: string, addition: number): Promise<void> {
+    const { vitality } = await this.playersRepository.findOneBy({ id })
+    await this.playersRepository.save({ id, vitality: Number(vitality) + addition })
   }
 
   async sendResources(sourcePlayerId: string, targetPlayerId: string, amount: number) {
@@ -72,6 +81,7 @@ export class PlayersService {
     await this.playersRepository.save({
       id: playerId,
       vitality: Math.max(Number(player.vitality) - attackStrength, 0),
+      hasSufferedAnyDamage: true,
     })
 
     return await this.playersRepository.findOneBy({ id: playerId })
@@ -224,5 +234,40 @@ export class PlayersService {
         paralysisRemainingTurns: newParalysisRemainingTurns,
       })
     }
+
+    // Decrement all armor counters
+    for (let i = 0; i < playerTypes.length; i++) {
+      const playerId = game[side][playerTypes[i]].id
+      const armorDuration = game[side][playerTypes[i]].armorDuration
+      const armor = game[side][playerTypes[i]].armor
+
+      let newArmorDuration
+      // Positive values mean that the ban is in effect
+      if (armorDuration > 0) {
+        newArmorDuration = armorDuration - 1
+      }
+      // 0 value means there is no ban
+      else if (armorDuration === 0) {
+        newArmorDuration = 0
+      }
+      // Negative values means that the ban is starting next turn
+      else {
+        newArmorDuration = Math.abs(armorDuration)
+      }
+
+      await this.playersRepository.save({
+        id: playerId,
+        armor: newArmorDuration === 0 ? 0 : armor,
+        armorDuration: newArmorDuration,
+      })
+    }
+  }
+
+  async activateArmor(playerId: string, armor: number, duration: number): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      armor,
+      armorDuration: -duration,
+    })
   }
 }

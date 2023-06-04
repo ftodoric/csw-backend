@@ -53,6 +53,24 @@ export class Game {
   @Column()
   recruitmentDriveMaxQuartersStreak: number
 
+  @Column()
+  energeticBearAprilVitality: number
+
+  @Column()
+  energeticBearAugustVitality: number
+
+  @Column()
+  didRosenergoatomRevitaliseThisQuarter: boolean
+
+  @Column()
+  growCapacityCurrentQuartersStreak: number
+
+  @Column()
+  growCapacityMaxQuartersStreak: number
+
+  @Column()
+  isRecoveryManagementActive: boolean
+
   @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()
   blueTeam: Team

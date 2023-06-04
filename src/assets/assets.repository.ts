@@ -5,7 +5,7 @@ import { DataSource, Repository } from 'typeorm'
 
 import { AssetDto } from './dto'
 import { Asset } from './entities'
-import { AssetStatus } from './interface'
+import { AssetStatus, AssetType } from './interface'
 
 @Injectable()
 export class AssetsRepository extends Repository<Asset> {
@@ -78,5 +78,25 @@ export class AssetsRepository extends Repository<Asset> {
       .andWhere(bidWhereClause)
 
     return query.getMany()
+  }
+
+  async getUkDefenceAssetsCount(gameId: string): Promise<number> {
+    const query = this.createQueryBuilder('asset')
+      .where('asset.gameId = :gameId', { gameId })
+      .andWhere('asset.status = :status', { status: AssetStatus.Secured })
+      .andWhere('asset.blueTeamBid > asset.redTeamBid')
+      .andWhere('asset.type = :type', { type: AssetType.Defence })
+
+    return query.getCount()
+  }
+
+  async getRussiaAttackAssetsCount(gameId: string): Promise<number> {
+    const query = this.createQueryBuilder('asset')
+      .where('asset.gameId = :gameId', { gameId })
+      .andWhere('asset.status = :status', { status: AssetStatus.Secured })
+      .andWhere('asset.redTeamBid > asset.blueTeamBid')
+      .andWhere('asset.type = :type', { type: AssetType.Attack })
+
+    return query.getCount()
   }
 }
