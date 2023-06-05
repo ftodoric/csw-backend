@@ -1,3 +1,4 @@
+import { EventCardName } from '@event-cards/interface'
 import { GameEntity, GameOutcome, GamePeriod, GameStatus } from '@games/interface/game.types'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
@@ -70,6 +71,9 @@ export class Game {
 
   @Column()
   isRecoveryManagementActive: boolean
+
+  @Column()
+  drawnEventCard: EventCardName
 
   @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()

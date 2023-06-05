@@ -67,9 +67,12 @@ export class PlayersService {
   async revitalise(id: string, amount: number): Promise<void> {
     const player = await this.playersRepository.findOneBy({ id })
 
+    // Check if player has Cyber Investment Programme effect
+    const cyberInvestmentProgrammeModifier = player.hasCyberInvestmentProgramme ? 1 : 0
+
     await this.playersRepository.save({
       id,
-      resource: player.resource - revitalisationConversionRate[amount],
+      resource: player.resource - revitalisationConversionRate[amount] + cyberInvestmentProgrammeModifier,
       // Postgre decimal returns as a string
       vitality: Number(player.vitality) + amount,
     })
@@ -261,13 +264,115 @@ export class PlayersService {
         armorDuration: newArmorDuration,
       })
     }
+
+    // Decrement all damage immunity counters
+    for (let i = 0; i < playerTypes.length; i++) {
+      const playerId = game[side][playerTypes[i]].id
+      const damageImmunityDuration = game[side][playerTypes[i]].damageImmunityDuration
+
+      let newDamageImmunityDuration
+      // Positive values mean that the condition is in effect
+      if (damageImmunityDuration > 0) {
+        newDamageImmunityDuration = damageImmunityDuration - 1
+      }
+      // 0 value means condition is not in effect
+      else if (damageImmunityDuration === 0) {
+        newDamageImmunityDuration = 0
+      }
+      // Negative values means that the ban is starting next turn
+      else {
+        newDamageImmunityDuration = Math.abs(damageImmunityDuration)
+      }
+
+      await this.playersRepository.save({
+        id: playerId,
+        damageImmunityDuration: newDamageImmunityDuration,
+      })
+    }
   }
 
   async activateArmor(playerId: string, armor: number, duration: number): Promise<void> {
+    // Check if already in effect
+    const { armorDuration } = await this.playersRepository.getPlayerById(playerId)
+
+    // If already in effect, reset the duration
+    // Reseting does not set value to negative one, because this turn is in effect too
+    const newArmorDuration = armorDuration > 0 ? duration : -duration
+
     await this.playersRepository.save({
       id: playerId,
       armor,
-      armorDuration: -duration,
+      armorDuration: newArmorDuration,
+    })
+  }
+
+  async activateDamageImmunity(playerId: string, duration: number): Promise<void> {
+    // Check if damage immunity already in effect
+    const { damageImmunityDuration } = await this.playersRepository.getPlayerById(playerId)
+
+    // If already in effect, reset the duration
+    // Reseting does not set value to negative one, because this turn is in effect too
+    const newDamageImmunityDuration = damageImmunityDuration > 0 ? duration : -duration
+
+    await this.playersRepository.save({
+      id: playerId,
+      damageImmunityDuration: newDamageImmunityDuration,
+    })
+  }
+
+  async activateSplashImmunity(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      isSplashImmune: true,
+    })
+  }
+
+  async activateDoubleDamage(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      hasDoubleDamage: true,
+    })
+  }
+
+  async deactivateDoubleDamage(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      hasDoubleDamage: false,
+    })
+  }
+
+  async activateCyberInvestmentProgramme(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      hasCyberInvestmentProgramme: true,
+    })
+  }
+
+  async activateRansomware(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      hasRansomwareAttack: true,
+    })
+  }
+
+  async deactivateRansomware(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      hasRansomwareAttack: false,
+    })
+  }
+
+  async setWasRansomwareAttacked(playerId: string, value: boolean): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      wasRansomwareAttacked: value,
+    })
+  }
+
+  async unparalyze(playerId: string): Promise<void> {
+    await this.playersRepository.save({
+      id: playerId,
+      paralysisRemainingTurns: 0,
     })
   }
 }

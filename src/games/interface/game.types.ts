@@ -61,6 +61,19 @@ export interface BidPayload {
 export interface AssetActivationPayload {
   teamSide: TeamSide
   attackVectorTarget?: PlayerType
+  softwareUpdateTarget?: PlayerType
+  networkPolicyTarget?: PlayerType
+  cyberInvestmentProgrammeTarget?: PlayerType
+  ransomwareAttacker?: PlayerType
+}
+
+export interface RansomwarePaymentPayload {
+  attackerId: string
+  victimId: string
+}
+export enum RansomwarePaymentAnswer {
+  Yes = 'yes',
+  No = 'no',
 }
 
 export enum GameEntity {

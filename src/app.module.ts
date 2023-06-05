@@ -10,6 +10,7 @@ import { SeedModule } from '@seed'
 import { TeamsModule } from '@teams'
 
 import { AssetsModule } from './assets/assets.module'
+import { EventCardsModule } from './event-cards/event-cards.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AssetsModule } from './assets/assets.module'
     PlayersModule,
     SeedModule,
     AssetsModule,
+    EventCardsModule,
   ],
 })
 export class AppModule {}

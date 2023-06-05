@@ -49,4 +49,11 @@ export class TeamsService {
       await this.playersService.resetPlayerSufferedDamage(redTeam[playerTypes[i]].id)
     }
   }
+
+  async setEventCardRead(teamId: string, value: boolean): Promise<void> {
+    await this.teamsRepository.save({
+      id: teamId,
+      isEventCardRead: value,
+    })
+  }
 }

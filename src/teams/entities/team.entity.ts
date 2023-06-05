@@ -13,6 +13,9 @@ export class Team {
   @Column()
   name: string
 
+  @Column()
+  isEventCardRead: boolean
+
   @OneToOne(() => Player, (player) => player.id, { eager: true })
   @JoinColumn()
   peoplePlayer: Player

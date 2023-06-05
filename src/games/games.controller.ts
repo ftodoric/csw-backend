@@ -16,7 +16,15 @@ import {
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesService } from './games.service'
-import { AssetActivationPayload, BidPayload, GameAction, GameActionPayload, GameStatus } from './interface/game.types'
+import {
+  AssetActivationPayload,
+  BidPayload,
+  GameAction,
+  GameActionPayload,
+  GameStatus,
+  RansomwarePaymentAnswer,
+  RansomwarePaymentPayload,
+} from './interface/game.types'
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -69,6 +77,17 @@ export class GamesController {
           throw new BadRequestException('Not enough resource to transfer.')
         }
 
+        // Check if source or target entity has Network Polciy effect
+        // Max 2 resources
+        const targetPlayer = await this.gamesService.getPlayerById(data.targetPlayerId)
+        if (data.entityPlayer.isSplashImmune || targetPlayer.isSplashImmune) {
+          if (data.resourceAmount > 2) {
+            throw new BadRequestException(
+              "Network policy effect doesn't allow this distrbute action. Max. 2 resource can be transferred."
+            )
+          }
+        }
+
         await this.gamesService.sendResource(data.entityPlayer.id, data.targetPlayerId, data.resourceAmount)
 
         break
@@ -87,7 +106,11 @@ export class GamesController {
         }
 
         // Check if user has enough resource to spend
-        if (revitalisationConversionRate[data.revitalizationAmount] > data.entityPlayer.resource) {
+        const cyberInvestmentProgrammeModifier = data.entityPlayer.hasCyberInvestmentProgramme ? 1 : 0
+        if (
+          revitalisationConversionRate[data.revitalizationAmount] >
+          data.entityPlayer.resource - cyberInvestmentProgrammeModifier
+        ) {
           throw new BadRequestException("Player doesn't have enough resource to spend.")
         }
 
@@ -207,11 +230,84 @@ export class GamesController {
         await this.gamesService.activateRecoveryManagement(gameId)
         break
 
+      case AssetName.SoftwareUpdate:
+        // Check if payload contains 'softwareUpdateTarget'
+        if (data.softwareUpdateTarget === undefined) {
+          throw new BadRequestException(
+            "To activate Software Update asset, 'softwareUpdateTarget' is required in payload."
+          )
+        }
+
+        await this.gamesService.activateSoftwareUpdate(game[data.teamSide][data.softwareUpdateTarget].id)
+
+        break
+
+      case AssetName.BargainingChip:
+        await this.gamesService.activateBargainingChip(gameId)
+        break
+
+      case AssetName.NetworkPolicy:
+        // Check if payload contains 'networkPolicyTarget'
+        if (data.networkPolicyTarget === undefined) {
+          throw new BadRequestException(
+            "To activate Network Policy asset, 'networkPolicyTarget' is required in payload."
+          )
+        }
+
+        await this.gamesService.activateNetworkPolicy(game[data.teamSide][data.networkPolicyTarget].id)
+        break
+
+      case AssetName.Stuxnet20:
+        await this.gamesService.activateStuxnet(game[data.teamSide].intelligencePlayer.id)
+        break
+
+      case AssetName.CyberInvestmentProgramme:
+        // Check if payload contains 'cyberInvestmentProgrammeTarget'
+        if (data.cyberInvestmentProgrammeTarget === undefined) {
+          throw new BadRequestException(
+            `To activate ${AssetName.CyberInvestmentProgramme} asset, 'cyberInvestmentProgrammeTarget' is required in payload.`
+          )
+        }
+
+        await this.gamesService.activateCyberInvestmentProgramme(
+          game[data.teamSide][data.cyberInvestmentProgrammeTarget].id
+        )
+        break
+
+      case AssetName.Ransomware:
+        // Check if payload contains 'ransomwareAttacker'
+        if (data.ransomwareAttacker === undefined) {
+          throw new BadRequestException(
+            `To activate ${AssetName.Ransomware} asset, 'ransomwareAttacker' is required in payload.`
+          )
+        }
+
+        await this.gamesService.activateRansomware(game[data.teamSide][data.ransomwareAttacker].id)
+
+        break
+
       default:
         break
     }
 
     // Set the asset status
     await this.gamesService.setAssetActivated(assetId)
+  }
+
+  @Post('/payRansomwareAttacker/:answer')
+  async payRansomwareAttacker(
+    @Param('answer') answer: RansomwarePaymentAnswer,
+    @Body() payload: RansomwarePaymentPayload
+  ): Promise<void> {
+    await this.gamesService.payRansomwareAttacker(
+      payload.attackerId,
+      payload.victimId,
+      answer === RansomwarePaymentAnswer.Yes
+    )
+  }
+
+  @Post('/:gameId/readEventCard/:teamSide')
+  async readEventCard(@Param('gameId') gameId: string, @Param('teamSide') teamSide: TeamSide): Promise<void> {
+    await this.gamesService.readEventCard(gameId, teamSide)
   }
 }

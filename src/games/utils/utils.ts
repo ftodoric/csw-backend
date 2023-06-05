@@ -27,3 +27,11 @@ export const calculateDamage = (attackStrength: number, armor: number, armorDura
   const appliedArmor = armorDuration > 0 ? armor : 0
   return ((100 - appliedArmor) / 100) * attackStrength
 }
+
+// TODO: use this function for damage calculation
+export const calculateDamageV2 = (attackStrength: number, armor: number, isSplashDamage: boolean) => {
+  const damage = ((100 - armor) / 100) * attackStrength
+
+  // todo define splash damage ratio config variable
+  return isSplashDamage ? damage / 2 : damage
+}

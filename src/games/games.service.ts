@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm'
 
 import { AssetsService } from '@assets'
 import { Asset } from '@assets/entities'
-import { AssetStatus } from '@assets/interface'
+import { AssetName, AssetStatus, AssetType } from '@assets/interface'
 import { AuthService } from '@auth'
 import { User } from '@auth/entities'
+import { EventCardsService } from '@event-cards'
+import { EventCardName, EventCardStatus } from '@event-cards/interface'
 import { PlayersService } from '@players'
 import { Player } from '@players/entities'
 import { PlayerType } from '@players/interface'
@@ -37,6 +39,7 @@ export class GamesService {
     private teamsService: TeamsService,
     @Inject(forwardRef(() => PlayersService)) private playersService: PlayersService,
     private assetsService: AssetsService,
+    private eventCardsService: EventCardsService,
     @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
   ) {}
 
@@ -136,6 +139,14 @@ export class GamesService {
       intelligencePlayer: scsPlayer,
     })
 
+    // Create all of the event cards
+    // Draw a random card in the beginning and on each new turn
+    const cards = Object.keys(EventCardName)
+    for (let i = 0; i < 7; i++) {
+      cards.push('UneventfulMonth')
+    }
+    let random = Math.floor(Math.random() * cards.length - 1)
+
     // Create a game with both sides
     const gameId = await this.gamesRepository.createGame({
       ownerId: user.id,
@@ -146,13 +157,20 @@ export class GamesService {
       turnsRemainingTime: TURN_TIME,
       activeSide: TeamSide.Red,
       activePeriod: GamePeriod.January,
+      drawnEventCard: EventCardName[cards[random]],
+    })
+
+    cards.forEach(async (card, i) => {
+      if (i === random) {
+        await this.eventCardsService.createCard({ name: EventCardName[card], status: EventCardStatus.Drawn }, gameId)
+      } else {
+        await this.eventCardsService.createCard({ name: EventCardName[card], status: EventCardStatus.InDeck }, gameId)
+      }
     })
 
     // Create all of the assets
     // Supply a random asset to the black market on the beginning
-    const min = 0
-    const max = assets.length - 1
-    const random = Math.floor(Math.random() * (max - min) + min)
+    random = Math.floor(Math.random() * assets.length - 1)
     assets.forEach(async (asset, i) => {
       if (i === random) {
         await this.assetsService.createAsset({ ...asset, status: AssetStatus.Bidding }, gameId)
@@ -172,6 +190,10 @@ export class GamesService {
     return await this.gamesRepository.getGameById(id)
   }
 
+  async getPlayerById(id: string): Promise<Player> {
+    return await this.playersService.getPlayerById(id)
+  }
+
   async nextTurn(gameId: string) {
     const game = await this.gamesRepository.getGameById(gameId)
 
@@ -188,6 +210,15 @@ export class GamesService {
     // Supply another asset to the market every month
     if (game.activeSide === TeamSide.Blue) {
       await this.assetsService.supplyAssetToMarket(gameId)
+
+      // Draw an Event Card each month
+      const drawnCard = await this.eventCardsService.drawCard(gameId)
+      await this.gamesRepository.save({
+        id: gameId,
+        drawnEventCard: drawnCard,
+      })
+      await this.teamsService.setEventCardRead(game.blueTeam.id, false)
+      await this.teamsService.setEventCardRead(game.redTeam.id, false)
     }
 
     // Reduce counters for all active bans for previous active team
@@ -357,22 +388,44 @@ export class GamesService {
       }
     }
 
+    // Online Trolls objective - Success breeds confidence
+    if (isOnlineTrolls && resourceSpent >= 3 && entityPlayer.hasRansomwareAttack) {
+      await this.playersService.addVictoryPoints(entityPlayer.id, 4)
+    }
+
     const targetSide = entityPlayer.side === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue
     const targetType = attackTargetMap[entityPlayer.side][entityPlayer.type]
 
     const targetPlayerId = game[targetSide][targetType].id
 
-    // Apply armor
+    // Use Stuxnet effect
+    // If not successful, still spend the effect
+    await this.playersService.deactivateDoubleDamage(entityPlayer.id)
+
     let damage
     if (attackStrength > 0) {
-      damage = calculateDamage(
-        attackStrength,
-        game[targetSide][targetType].armor,
-        game[targetSide][targetType].armorDuration
-      )
+      // If attacker has ransomware successful attack, apply the paralysis
+      if (entityPlayer.hasRansomwareAttack) {
+        await this.playersService.paralyze(game.id, targetSide, targetType, 2)
+        await this.playersService.setWasRansomwareAttacked(targetPlayerId, true)
+      }
+
+      // If Stuxnet is in effect double the damage before applying armor
+      damage = entityPlayer.hasDoubleDamage ? attackStrength * 2 : attackStrength
+
+      // Apply armor
+      damage = calculateDamage(damage, game[targetSide][targetType].armor, game[targetSide][targetType].armorDuration)
+
+      // If target has immunity, deal no damage
+      // But do the splash damage
+      const hasImmunity = game[targetSide][targetType].damageImmunityDuration > 0
+      damage = hasImmunity ? 0 : damage
     } else {
       damage = calculateDamage(Math.abs(attackStrength), entityPlayer.armor, entityPlayer.armorDuration)
     }
+
+    // Ransomware attack is one time use
+    await this.playersService.deactivateRansomware(entityPlayer.id)
 
     // Deduce the players vitality points
     const player =
@@ -398,7 +451,10 @@ export class GamesService {
         game[splashSide][splashType].armorDuration
       )
 
-      await this.playersService.reducePlayerVitality(splashPlayerId, damage / 2)
+      // Check if Network Policy is in effect
+      damage = game[splashSide][splashType].isSplashImmune ? 0 : damage / 2
+
+      await this.playersService.reducePlayerVitality(splashPlayerId, damage)
     }
 
     // Attribution level
@@ -543,9 +599,21 @@ export class GamesService {
 
         // -2 Penalty for SCS
         // UK may choose to open up GCHQ-Rosenergoatom or UK Government-Russia Government attack vector at no cost.
-        // This penalty does not give 'Attack Vector' asset, only a free additional option
+        // This will not consume any existing assets, only create a new one for as many times as needed
         if (playerType === PlayerType.Intelligence) {
-          // TODO
+          const specialAssetId = await this.assetsService.createAsset(
+            {
+              name: AssetName.AttackVector,
+              type: AssetType.Attack,
+              effectDescription:
+                'Opens up GCQH - Rosenergoatom or UK Government - Russian Government attack vector, at no cost.',
+              minimumBid: 0,
+              status: AssetStatus.Secured,
+            },
+            gameId
+          )
+
+          await this.assetsService.giveAssetToTeam(specialAssetId, TeamSide.Blue)
         }
       }
 
@@ -713,12 +781,63 @@ export class GamesService {
     await this.playersService.activateArmor(blueTeam.peoplePlayer.id, 50, 3)
   }
 
+  // Russia Government suffers half of any damage for 3 turns
+  async activateBargainingChip(gameId: string): Promise<void> {
+    const { redTeam } = await this.gamesRepository.getGameById(gameId)
+    await this.playersService.activateArmor(redTeam.governmentPlayer.id, 50, 3)
+  }
+
   // If UK PLC suffered any damage this turn, increase vitality by 1
   async activateRecoveryManagement(gameId: string): Promise<void> {
     await this.gamesRepository.save({ id: gameId, isRecoveryManagementActive: true })
   }
 
+  // Renders an entity immune to direct attacks for 2 turns
+  async activateSoftwareUpdate(playerId: string): Promise<void> {
+    await this.playersService.activateDamageImmunity(playerId, 2)
+  }
+
+  // Renders Entity immune for splash damage, but only 2 resource can be transferred to or from it each turn
+  async activateNetworkPolicy(playerId: string): Promise<void> {
+    await this.playersService.activateSplashImmunity(playerId)
+  }
+
+  // Direct attack from intelligence players deal double damage to energy players
+  async activateStuxnet(playerId: string): Promise<void> {
+    await this.playersService.activateDoubleDamage(playerId)
+  }
+
+  // Entity can revitalise at 1 less resource cost
+  async activateCyberInvestmentProgramme(playerId: string): Promise<void> {
+    await this.playersService.activateCyberInvestmentProgramme(playerId)
+  }
+
+  // Ransomware
+  async activateRansomware(playerId: string): Promise<void> {
+    await this.playersService.activateRansomware(playerId)
+  }
+
   async setAssetActivated(assetId: string): Promise<void> {
     await this.assetsService.setAssetStatus(assetId, AssetStatus.Activated)
+  }
+
+  async payRansomwareAttacker(attackerId: string, victimId: string, yes: boolean): Promise<void> {
+    if (yes) {
+      // Pay 2 resource
+      await this.playersService.sendResources(victimId, attackerId, 2)
+
+      // Unparalyze
+      await this.playersService.unparalyze(victimId)
+    }
+    // Else, keep resource and stay paralyzed
+
+    // Reset flag
+    await this.playersService.setWasRansomwareAttacked(victimId, false)
+  }
+
+  async readEventCard(gameId: string, teamSide: TeamSide): Promise<void> {
+    const game = await this.gamesRepository.getGameById(gameId)
+
+    await this.teamsService.setEventCardRead(game[teamSide].id, true)
   }
 }

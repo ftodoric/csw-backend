@@ -20,7 +20,7 @@ export class TeamsRepository extends Repository<Team> {
   }
 
   async createTeam(teamDto: TeamDto): Promise<Team> {
-    const team = this.create(teamDto)
+    const team = this.create({ ...teamDto, isEventCardRead: false })
 
     try {
       await this.save(team)

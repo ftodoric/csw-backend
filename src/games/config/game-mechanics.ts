@@ -70,7 +70,7 @@ export const attackSplashMap = {
   [TeamSide.Red]: {
     [PlayerType.People]: [PlayerType.Government],
     [PlayerType.Industry]: [PlayerType.Government, PlayerType.Intelligence],
-    [PlayerType.Government]: [PlayerType.People, PlayerType.Industry, PlayerType.Government, PlayerType.Energy],
+    [PlayerType.Government]: [PlayerType.People, PlayerType.Industry, PlayerType.Energy, PlayerType.Intelligence],
     [PlayerType.Energy]: [PlayerType.Government],
     [PlayerType.Intelligence]: [PlayerType.Industry, PlayerType.Government],
   },

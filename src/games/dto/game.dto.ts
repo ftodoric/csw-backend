@@ -1,3 +1,4 @@
+import { EventCardName } from '@event-cards/interface'
 import { GameStatus, GameOutcome, GamePeriod } from '@games/interface/game.types'
 import { Team } from '@teams/entities'
 import { TeamSide } from '@teams/interface'
@@ -12,4 +13,5 @@ export interface GameDto {
   turnsRemainingTime: number
   activeSide: TeamSide
   activePeriod: GamePeriod
+  drawnEventCard: EventCardName
 }

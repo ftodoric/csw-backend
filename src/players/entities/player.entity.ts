@@ -51,6 +51,24 @@ export class Player {
   @Column()
   hasSufferedAnyDamage: boolean
 
+  @Column()
+  damageImmunityDuration: number
+
+  @Column()
+  isSplashImmune: boolean
+
+  @Column()
+  hasDoubleDamage: boolean
+
+  @Column()
+  hasCyberInvestmentProgramme: boolean
+
+  @Column()
+  hasRansomwareAttack: boolean
+
+  @Column()
+  wasRansomwareAttacked: boolean
+
   @ManyToOne(() => User, (user) => user.id, { eager: true })
   user: User
 }

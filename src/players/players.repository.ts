@@ -38,6 +38,12 @@ export class PlayersRepository extends Repository<Player> {
       armor: 0,
       armorDuration: 0,
       hasSufferedAnyDamage: false,
+      damageImmunityDuration: 0,
+      isSplashImmune: false,
+      hasDoubleDamage: false,
+      hasCyberInvestmentProgramme: false,
+      hasRansomwareAttack: false,
+      wasRansomwareAttacked: false,
     })
 
     try {

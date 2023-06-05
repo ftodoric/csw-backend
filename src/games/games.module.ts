@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { AssetsModule } from '@assets'
 import { AuthModule } from '@auth'
+import { EventCardsModule } from '@event-cards'
 import { PlayersModule } from '@players'
 import { TeamsModule } from '@teams'
 
@@ -15,7 +16,14 @@ import { TimerGateway } from './timer.gateway'
 @Module({
   controllers: [GamesController],
   providers: [GamesService, GamesRepository, TimerGateway],
-  imports: [AuthModule, TypeOrmModule.forFeature([Game]), TeamsModule, forwardRef(() => PlayersModule), AssetsModule],
+  imports: [
+    AuthModule,
+    TypeOrmModule.forFeature([Game]),
+    TeamsModule,
+    forwardRef(() => PlayersModule),
+    AssetsModule,
+    EventCardsModule,
+  ],
   exports: [GamesService],
 })
 export class GamesModule {}
