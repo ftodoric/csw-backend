@@ -14,12 +14,12 @@ export class PlayersRepository extends Repository<Player> {
     super(Player, dataSource.createEntityManager())
   }
 
-  async createPlayer(createPlayerDto: CreatePlayerDto): Promise<Player> {
+  async createPlayer(createPlayerDto: CreatePlayerDto, isPeoplesRevoltCardDrawn?: boolean): Promise<Player> {
     const { user, side, playerType } = createPlayerDto
 
     let initialResource = INITIAL_RESOURCE
 
-    if (side === TeamSide.Blue && playerType === PlayerType.Government) {
+    if (side === TeamSide.Red && playerType === PlayerType.Government && !isPeoplesRevoltCardDrawn) {
       initialResource += GOVERNMENT_NEW_TURN_RESOURCE_ADDITION
     }
 

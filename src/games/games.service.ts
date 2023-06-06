@@ -64,6 +64,14 @@ export class GamesService {
     const rosenergoatomUser = await this.authService.getUserById(gameDto.rosenergoatomUserId)
     const scsUser = await this.authService.getUserById(gameDto.scsUserId)
 
+    // Create all of the event cards
+    // Draw a random card in the beginning and on each new turn
+    const cards = Object.keys(EventCardName)
+    for (let i = 0; i < 7; i++) {
+      cards.push('UneventfulMonth')
+    }
+    let random = Math.floor(Math.random() * cards.length - 1)
+
     // Create blue team players
     const electoratePlayer = await this.playersService.createPlayer({
       user: electorateUser,
@@ -102,11 +110,14 @@ export class GamesService {
       side: TeamSide.Red,
       playerType: PlayerType.Industry,
     })
-    const russianGovernmentPlayer = await this.playersService.createPlayer({
-      user: russianGovernmentUser,
-      side: TeamSide.Red,
-      playerType: PlayerType.Government,
-    })
+    const russianGovernmentPlayer = await this.playersService.createPlayer(
+      {
+        user: russianGovernmentUser,
+        side: TeamSide.Red,
+        playerType: PlayerType.Government,
+      },
+      EventCardName[cards[random]] === EventCardName.PeoplesRevolt
+    )
     const rosenergoatomPlayer = await this.playersService.createPlayer({
       user: rosenergoatomUser,
       side: TeamSide.Red,
@@ -139,14 +150,6 @@ export class GamesService {
       intelligencePlayer: scsPlayer,
     })
 
-    // Create all of the event cards
-    // Draw a random card in the beginning and on each new turn
-    const cards = Object.keys(EventCardName)
-    for (let i = 0; i < 7; i++) {
-      cards.push('UneventfulMonth')
-    }
-    let random = Math.floor(Math.random() * cards.length - 1)
-
     // Create a game with both sides
     const gameId = await this.gamesRepository.createGame({
       ownerId: user.id,
@@ -168,11 +171,14 @@ export class GamesService {
       }
     })
 
+    // Apply first month card effect
+    await this.applyEventCardEffect(gameId)
+
     // Create all of the assets
     // Supply a random asset to the black market on the beginning
     random = Math.floor(Math.random() * assets.length - 1)
     assets.forEach(async (asset, i) => {
-      if (i === random) {
+      if (asset.name === 'Attack Vector') {
         await this.assetsService.createAsset({ ...asset, status: AssetStatus.Bidding }, gameId)
       } else {
         await this.assetsService.createAsset({ ...asset, status: AssetStatus.NotSuppliedToMarket }, gameId)
@@ -204,23 +210,6 @@ export class GamesService {
       team = await this.teamsService.getTeamById(game.redTeam.id)
     }
 
-    // Determine whether a team gets an asset
-    await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
-
-    // Supply another asset to the market every month
-    if (game.activeSide === TeamSide.Blue) {
-      await this.assetsService.supplyAssetToMarket(gameId)
-
-      // Draw an Event Card each month
-      const drawnCard = await this.eventCardsService.drawCard(gameId)
-      await this.gamesRepository.save({
-        id: gameId,
-        drawnEventCard: drawnCard,
-      })
-      await this.teamsService.setEventCardRead(game.blueTeam.id, false)
-      await this.teamsService.setEventCardRead(game.redTeam.id, false)
-    }
-
     // Reduce counters for all active bans for previous active team
     await this.playersService.decrementConditionCounters(gameId, game.activeSide)
 
@@ -241,11 +230,31 @@ export class GamesService {
     await this.teamsService.resetBothTeamsActions(game.blueTeam.id, game.redTeam.id)
 
     // Check if game ended
-    if (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) {
+    const isGameOver = game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue
+    if (isGameOver) {
       await this.setGameOver(gameId)
 
       await this.timerGateway.stopTimer(gameId)
     } else {
+      // Determine whether a team gets an asset
+      await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
+
+      // Supply another asset to the market every month
+      if (game.activeSide === TeamSide.Blue) {
+        await this.assetsService.supplyAssetToMarket(gameId)
+
+        // Draw an Event Card each month
+        const drawnCard = await this.eventCardsService.drawCard(gameId)
+        await this.gamesRepository.save({
+          id: gameId,
+          drawnEventCard: drawnCard,
+        })
+        await this.teamsService.setEventCardRead(game.blueTeam.id, false)
+        await this.teamsService.setEventCardRead(game.redTeam.id, false)
+
+        await this.applyEventCardEffect(gameId)
+      }
+
       const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
 
       await this.gamesRepository.save({
@@ -257,7 +266,15 @@ export class GamesService {
         activePeriod: nextPeriod,
       })
 
-      await this.playersService.addResources(game[nextSide].governmentPlayer.id, GOVERNMENT_NEW_TURN_RESOURCE_ADDITION)
+      const { drawnEventCard } = await this.getGameById(gameId)
+
+      // Event Card People's Revolt effect
+      if (!(drawnEventCard === EventCardName.PeoplesRevolt && game.activeSide === TeamSide.Blue)) {
+        await this.playersService.addResources(
+          game[nextSide].governmentPlayer.id,
+          GOVERNMENT_NEW_TURN_RESOURCE_ADDITION
+        )
+      }
 
       await this.timerGateway.handleRestartTimer(game.id)
     }
@@ -341,8 +358,8 @@ export class GamesService {
     this.gamesRepository.pauseGame(gameId, remainingTime)
   }
 
-  continueGame(gameId: string): Promise<void> {
-    return this.gamesRepository.setGameStatus(gameId, GameStatus.InProgress)
+  async continueGame(gameId: string): Promise<void> {
+    await this.gamesRepository.setGameStatus(gameId, GameStatus.InProgress)
   }
 
   async sendResource(sourcePlayerId: string, targetPlayerId: string, resourceAmount: number): Promise<void> {
@@ -372,6 +389,15 @@ export class GamesService {
         id: gameId,
         didRosenergoatomRevitaliseThisQuarter: true,
       })
+    }
+  }
+
+  async reducePlayerVitalityAndCheckIfGameOver(gameId: string, playerId: string, amount: number): Promise<void> {
+    const { vitality: newVitality } = await this.playersService.reducePlayerVitality(playerId, amount)
+
+    if (Number(newVitality) === 0) {
+      await this.setGameOver(gameId)
+      await this.timerGateway.stopTimer(gameId)
     }
   }
 
@@ -475,17 +501,19 @@ export class GamesService {
         // If Blue Team attacked and caused some of it's own entities to drop to 0, do not reward anyone
         if (entityPlayer.side === TeamSide.Red) {
           await this.playersService.addVictoryPoints(game[entityPlayer.side][entityPlayer.type].id, 10)
+          break
         }
         break
       }
     }
     for (let i = 0; i < playerTypes.length; i++) {
-      const vitality = Number(refreshedGame.blueTeam[playerTypes[i]].vitality)
+      const vitality = Number(refreshedGame.redTeam[playerTypes[i]].vitality)
       if (vitality === 0) {
         attackEndedTheGame = true
         // Reward Blue Team 10 VP
         if (entityPlayer.side === TeamSide.Blue) {
           await this.playersService.addVictoryPoints(game[entityPlayer.side][entityPlayer.type].id, 10)
+          break
         }
       }
     }
@@ -625,7 +653,7 @@ export class GamesService {
           this.playersService.paralyze(gameId, side, playerType, -2)
 
           const game = await this.getGameById(gameId)
-          await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 1)
+          await this.reducePlayerVitalityAndCheckIfGameOver(game.id, game.blueTeam.governmentPlayer.id, 1)
         }
 
         // -2 Penalty for UK Government
@@ -634,7 +662,7 @@ export class GamesService {
           this.giveAssetToTeam(gameId, 'Bargaining Chip', TeamSide.Red)
 
           const game = await this.getGameById(gameId)
-          await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 2)
+          await this.reducePlayerVitalityAndCheckIfGameOver(game.id, game.blueTeam.governmentPlayer.id, 2)
           await this.playersService.reducePlayerResource(game.blueTeam.governmentPlayer.id, 2)
         }
       }
@@ -839,5 +867,55 @@ export class GamesService {
     const game = await this.gamesRepository.getGameById(gameId)
 
     await this.teamsService.setEventCardRead(game[teamSide].id, true)
+  }
+
+  // Return boolean did any card effect end the game
+  async applyEventCardEffect(gameId: string) {
+    const game = await this.gamesRepository.getGameById(gameId)
+
+    switch (game.drawnEventCard) {
+      case EventCardName.NuclearMeltdown:
+        await this.reducePlayerVitalityAndCheckIfGameOver(gameId, game.blueTeam.energyPlayer.id, 1)
+        break
+
+      case EventCardName.ClumsyCivilServant:
+        await this.reducePlayerVitalityAndCheckIfGameOver(gameId, game.blueTeam.peoplePlayer.id, 1)
+        await this.playersService.reducePlayerResource(game.blueTeam.governmentPlayer.id, 2)
+        break
+
+      case EventCardName.SoftwareUpdate:
+        await this.playersService.reducePlayerResource(game.blueTeam.industryPlayer.id, 2)
+        break
+
+      case EventCardName.BankingError:
+      case EventCardName.Embargoed:
+        break
+
+      case EventCardName.LaxOpSec:
+        await this.reducePlayerVitalityAndCheckIfGameOver(gameId, game.redTeam.governmentPlayer.id, 1)
+        await this.playersService.reducePlayerResource(game.redTeam.governmentPlayer.id, 1)
+        break
+
+      case EventCardName.PeoplesRevolt:
+        // Implemented in nextTurn method
+        break
+
+      case EventCardName.QuantumBreakthrough:
+        const playerTypes = Object.values(PlayerType)
+        for (let i = 0; i < playerTypes.length; i++) {
+          // Add 1 resource
+          await this.playersService.addResources(game.blueTeam[playerTypes[i]].id, 1)
+          await this.playersService.addResources(game.redTeam[playerTypes[i]].id, 1)
+
+          // Add 1 vitality
+          await this.playersService.addVitality(game.blueTeam[playerTypes[i]].id, 1)
+          await this.playersService.addVitality(game.redTeam[playerTypes[i]].id, 1)
+        }
+        break
+
+      case EventCardName.UneventfulMonth:
+      default:
+        break
+    }
   }
 }

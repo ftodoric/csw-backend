@@ -18,8 +18,8 @@ export class PlayersService {
     @Inject(forwardRef(() => GamesService)) private gamesService: GamesService
   ) {}
 
-  async createPlayer(createPlayerDto: CreatePlayerDto): Promise<Player> {
-    return this.playersRepository.createPlayer(createPlayerDto)
+  async createPlayer(createPlayerDto: CreatePlayerDto, isPeoplesRevoltCardDrawn?: boolean): Promise<Player> {
+    return this.playersRepository.createPlayer(createPlayerDto, isPeoplesRevoltCardDrawn)
   }
 
   async getPlayerById(id: string): Promise<Player> {
@@ -81,9 +81,11 @@ export class PlayersService {
   async reducePlayerVitality(playerId: string, attackStrength: number): Promise<Player> {
     const player = await this.playersRepository.findOneBy({ id: playerId })
 
+    const newVitality = Math.max(Number(player.vitality) - attackStrength, 0)
+
     await this.playersRepository.save({
       id: playerId,
-      vitality: Math.max(Number(player.vitality) - attackStrength, 0),
+      vitality: newVitality,
       hasSufferedAnyDamage: true,
     })
 
@@ -102,7 +104,7 @@ export class PlayersService {
 
     await this.playersRepository.save({
       id: playerId,
-      resource: player.resource - amount,
+      resource: Math.max(player.resource - amount, 0),
     })
   }
 

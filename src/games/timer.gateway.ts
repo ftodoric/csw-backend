@@ -97,11 +97,15 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleRestartTimer(gameId: string) {
     const game = await this.gamesService.getGameById(gameId)
 
-    // Send a tick to client
-    this.handleTimerTick(gameId)
+    // Check if game already ended at some points in the code
+    // DIRTY
+    if (this.roomsTimers[gameId]) {
+      // Send a tick to client
+      await this.handleTimerTick(gameId)
 
-    clearRoomTimer(this.roomsTimers, gameId)
-    startRoomTimer(this, gameId, game.turnsRemainingTime)
+      await clearRoomTimer(this.roomsTimers, gameId)
+      await startRoomTimer(this, gameId, game.turnsRemainingTime)
+    }
   }
 
   /**
