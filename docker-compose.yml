@@ -11,12 +11,12 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: csw-database
 
-  csw-backend:
-    container_name: csw-backend
-    build: .
-    ports:
-      - '8000:8000'
-    depends_on:
-      - csw-database
-    links:
-      - csw-database
+  # csw-backend:
+  #   container_name: csw-backend
+  #   build: .
+  #   ports:
+  #     - '8000:8000'
+  #   depends_on:
+  #     - csw-database
+  #   links:
+  #     - csw-database
