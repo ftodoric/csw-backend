@@ -178,7 +178,7 @@ export class GamesService {
     // Supply a random asset to the black market on the beginning
     random = Math.floor(Math.random() * assets.length - 1)
     assets.forEach(async (asset, i) => {
-      if (asset.name === 'Attack Vector') {
+      if (i === random) {
         await this.assetsService.createAsset({ ...asset, status: AssetStatus.Bidding }, gameId)
       } else {
         await this.assetsService.createAsset({ ...asset, status: AssetStatus.NotSuppliedToMarket }, gameId)
@@ -653,7 +653,7 @@ export class GamesService {
           this.playersService.paralyze(gameId, side, playerType, -2)
 
           const game = await this.getGameById(gameId)
-          await this.reducePlayerVitalityAndCheckIfGameOver(game.id, game.blueTeam.governmentPlayer.id, 1)
+          await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 1)
         }
 
         // -2 Penalty for UK Government
@@ -662,7 +662,7 @@ export class GamesService {
           this.giveAssetToTeam(gameId, 'Bargaining Chip', TeamSide.Red)
 
           const game = await this.getGameById(gameId)
-          await this.reducePlayerVitalityAndCheckIfGameOver(game.id, game.blueTeam.governmentPlayer.id, 2)
+          await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 2)
           await this.playersService.reducePlayerResource(game.blueTeam.governmentPlayer.id, 2)
         }
       }
