@@ -11,7 +11,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api')
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://csw-frontend.vercel.app'],
+    origin: ['http://localhost:3000', 'https://csw-frontend.vercel.app', 'https://www.cs-wargame.com'],
     credentials: true,
   })
 
