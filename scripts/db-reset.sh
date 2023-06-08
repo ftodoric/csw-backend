@@ -1,4 +1,6 @@
-# Stop container is running
+#!/bin/bash
+
+# Stop the container
 docker stop csw-database > /dev/null
 echo
 echo "  🛑 Container removed"
@@ -11,6 +13,3 @@ echo
 
 # Compose from postgres image
 docker compose up -d csw-database
-
-# Run dev server
-nest start --watch
