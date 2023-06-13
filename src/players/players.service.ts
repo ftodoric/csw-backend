@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 
 import { GamesService } from '@games'
 import { revitalisationConversionRate } from '@games/config/game-mechanics'
+import { GameAction } from '@games/interface/game.types'
 import { TeamSide } from '@teams/interface'
 
 import { CreatePlayerDto } from './dto'
@@ -31,8 +32,8 @@ export class PlayersService {
    * This is that setter.
    * @param playerId
    */
-  async setPlayerMadeAction(playerId: string): Promise<void> {
-    await this.playersRepository.setPlayerMadeAction(playerId)
+  async setPlayerMadeAction(playerId: string, madeAction: GameAction): Promise<void> {
+    await this.playersRepository.setPlayerAction(playerId, madeAction)
   }
 
   async resetPlayerMadeAction(playerId: string): Promise<void> {

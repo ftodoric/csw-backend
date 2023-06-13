@@ -19,8 +19,8 @@ import { GamesService } from './games.service'
 import {
   AssetActivationPayload,
   BidPayload,
+  FinishTurnPayload,
   GameAction,
-  GameActionPayload,
   GameStatus,
   RansomwarePaymentAnswer,
   RansomwarePaymentPayload,
@@ -46,110 +46,125 @@ export class GamesController {
     return this.gamesService.getGameById(id)
   }
 
-  @Post('/:id/action/:type')
-  async action(@Param('id') gameId, @Param('type') actionType, @Body() data: GameActionPayload): Promise<void> {
-    // General check for all action tpes
+  @Post('/action/:type')
+  async action(@Param('type') actionType, @Body() data: { playerId: string }): Promise<void> {
+    await this.gamesService.setPlayerMadeAction(data.playerId, actionType)
+  }
+
+  @Post('/:id/finishTurn')
+  async finishTurn(@Param('id') gameId, @Body() data: FinishTurnPayload): Promise<void> {
     const game = await this.gamesService.getGameById(gameId)
-    if (data.entityPlayer.side !== game.activeSide)
-      throw new BadRequestException("Action not allowed. Not player's turn.")
 
-    if (game.status !== GameStatus.InProgress)
-      throw new BadRequestException('Action not allowed. Game is not in progress.')
+    // Iterate through every player action
+    for (const playerId in data) {
+      const entityPlayer = data[playerId].entityPlayer
+      const actionType = data[playerId].gameAction
+      const gameActionPayload = data[playerId].gameActionPayload
 
-    switch (actionType) {
-      case GameAction.DISTRIBUTE:
-        // Check if payload has the correct data
-        if (!data.targetPlayerId || !data.resourceAmount) {
-          throw new BadRequestException(
-            "Distribute action requires both the 'targetPlayerId' and the 'resourcemount' payload fields."
-          )
-        }
+      // General check for all action types
+      if (entityPlayer.side !== game.activeSide) throw new BadRequestException("Action not allowed. Not player's turn.")
 
-        // Check resource amount
-        if (data.resourceAmount <= 0 || data.resourceAmount > MAX_NUMBER_OF_RESOURCE_PER_TRANSFER) {
-          throw new BadRequestException(
-            `Maximum amount of resource that can be transfered in one action is: ${MAX_NUMBER_OF_RESOURCE_PER_TRANSFER} and minimum of 1.`
-          )
-        }
+      if (game.status !== GameStatus.InProgress)
+        throw new BadRequestException('Action not allowed. Game is not in progress.')
 
-        // Check if source entity player has the amount that wants to be transfered
-        if (data.entityPlayer.resource < data.resourceAmount) {
-          throw new BadRequestException('Not enough resource to transfer.')
-        }
-
-        // Check if source or target entity has Network Polciy effect
-        // Max 2 resources
-        const targetPlayer = await this.gamesService.getPlayerById(data.targetPlayerId)
-        if (data.entityPlayer.isSplashImmune || targetPlayer.isSplashImmune) {
-          if (data.resourceAmount > 2) {
+      switch (actionType) {
+        case GameAction.DISTRIBUTE:
+          // Check if payload has the correct data
+          if (!gameActionPayload.targetPlayerId || !gameActionPayload.resourceAmount) {
             throw new BadRequestException(
-              "Network policy effect doesn't allow this distrbute action. Max. 2 resource can be transferred."
+              "Distribute action requires both the 'targetPlayerId' and the 'resourcemount' payload fields."
             )
           }
-        }
 
-        await this.gamesService.sendResource(data.entityPlayer.id, data.targetPlayerId, data.resourceAmount)
+          // Check resource amount
+          if (
+            gameActionPayload.resourceAmount <= 0 ||
+            gameActionPayload.resourceAmount > MAX_NUMBER_OF_RESOURCE_PER_TRANSFER
+          ) {
+            throw new BadRequestException(
+              `Maximum amount of resource that can be transfered in one action is: 
+              ${MAX_NUMBER_OF_RESOURCE_PER_TRANSFER} and minimum of 1.`
+            )
+          }
 
-        break
+          // Check if source entity player has the amount that wants to be transfered
+          if (entityPlayer.resource < gameActionPayload.resourceAmount) {
+            throw new BadRequestException('Not enough resource to transfer.')
+          }
 
-      case GameAction.REVITALISE:
-        // Check if the payload has the correct data
-        if (data.revitalizationAmount === undefined) {
-          throw new BadRequestException("Revitalise action requires 'revitalizationAmount' payload field.")
-        }
+          // Check if source or target entity has Network Polciy effect
+          // Max 2 resources
+          const targetPlayer = await this.gamesService.getPlayerById(gameActionPayload.targetPlayerId)
+          if (entityPlayer.isSplashImmune || targetPlayer.isSplashImmune) {
+            if (gameActionPayload.resourceAmount > 2) {
+              throw new BadRequestException(
+                "Network policy effect doesn't allow this distrbute action. Max. 2 resource can be transferred."
+              )
+            }
+          }
 
-        // Check for maximum amount that can be spent
-        if (data.revitalizationAmount > MAX_AMOUNT_OF_REVITALIZATION) {
-          throw new BadRequestException(
-            `Revitalization can be performed up to ${MAX_AMOUNT_OF_REVITALIZATION} vitality.`
+          await this.gamesService.sendResource(
+            entityPlayer.id,
+            gameActionPayload.targetPlayerId,
+            gameActionPayload.resourceAmount
           )
-        }
 
-        // Check if user has enough resource to spend
-        const cyberInvestmentProgrammeModifier = data.entityPlayer.hasCyberInvestmentProgramme ? 1 : 0
-        if (
-          revitalisationConversionRate[data.revitalizationAmount] >
-          data.entityPlayer.resource - cyberInvestmentProgrammeModifier
-        ) {
-          throw new BadRequestException("Player doesn't have enough resource to spend.")
-        }
+          break
 
-        await this.gamesService.revitalise(gameId, data.entityPlayer.id, data.revitalizationAmount)
+        case GameAction.REVITALISE:
+          // Check if the payload has the correct data
+          if (gameActionPayload.revitalizationAmount === undefined) {
+            throw new BadRequestException("Revitalise action requires 'revitalizationAmount' payload field.")
+          }
 
-        break
+          // Check for maximum amount that can be spent
+          if (gameActionPayload.revitalizationAmount > MAX_AMOUNT_OF_REVITALIZATION) {
+            throw new BadRequestException(
+              `Revitalization can be performed up to ${MAX_AMOUNT_OF_REVITALIZATION} vitality.`
+            )
+          }
 
-      case GameAction.ATTACK:
-        // Check if the payload has the correct data
-        if (data.resourceAmount === undefined || data.diceRoll === undefined) {
-          throw new BadRequestException("Attack action requires 'resourceAmount' and 'diceRoll' payload fields.")
-        }
+          // Check if user has enough resource to spend
+          const cyberInvestmentProgrammeModifier = entityPlayer.hasCyberInvestmentProgramme ? 1 : 0
+          if (
+            revitalisationConversionRate[gameActionPayload.revitalizationAmount] >
+            entityPlayer.resource - cyberInvestmentProgrammeModifier
+          ) {
+            throw new BadRequestException("Player doesn't have enough resource to spend.")
+          }
 
-        // Check if the player is allowed to attack
-        if (!isAttackAllowed(game, data.entityPlayer)) {
-          throw new BadRequestException('Player is not allowed an attack.')
-        }
+          await this.gamesService.revitalise(gameId, entityPlayer.id, gameActionPayload.revitalizationAmount)
 
-        // Check if the player has enough resources
-        if (data.resourceAmount > data.entityPlayer.resource) {
-          throw new BadRequestException("Player doesn't have enough resource to spend.")
-        }
+          break
 
-        // Check if the dice roll is in correct boundaries
-        if (data.diceRoll > 6 || data.diceRoll < 1) {
-          throw new BadRequestException('Dice roll result not in 1 to 6 interval.')
-        }
+        case GameAction.ATTACK:
+          // Check if the payload has the correct data
+          if (gameActionPayload.resourceAmount === undefined) {
+            throw new BadRequestException("Attack action requires 'resourceAmount' payload field.")
+          }
 
-        await this.gamesService.attack(game, data.entityPlayer, data.resourceAmount, data.diceRoll)
+          // Check if the player is allowed to attack
+          if (!isAttackAllowed(game, entityPlayer)) {
+            throw new BadRequestException('Player is not allowed an attack.')
+          }
 
-        break
+          // Check if the player has enough resources
+          if (gameActionPayload.resourceAmount > entityPlayer.resource) {
+            throw new BadRequestException("Player doesn't have enough resource to spend.")
+          }
 
-      case GameAction.ACCESS_BLACK_MARKET:
-      case GameAction.ABSTAIN:
-      default:
-        break
+          await this.gamesService.attack(game, entityPlayer, gameActionPayload.resourceAmount)
+
+          break
+
+        case GameAction.ACCESS_BLACK_MARKET:
+        case GameAction.ABSTAIN:
+        default:
+          break
+      }
     }
 
-    await this.gamesService.setNextTurnIfLastTeamAction(gameId, data.entityPlayer)
+    await this.gamesService.nextTurn(gameId)
   }
 
   @Get('/:id/blackMarket')

@@ -39,17 +39,20 @@ export enum GameAction {
 }
 
 export interface GameActionPayload {
-  entityPlayer: Player
-
   // Distribute
   resourceAmount?: number
   targetPlayerId?: string
 
   // Revitalise
   revitalizationAmount?: number
+}
 
-  // Attack
-  diceRoll?: number
+export interface FinishTurnPayload {
+  [playerId: string]: {
+    entityPlayer: Player
+    gameAction: GameAction
+    gameActionPayload: GameActionPayload
+  }
 }
 
 export interface BidPayload {

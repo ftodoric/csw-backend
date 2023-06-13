@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
 
 import { GOVERNMENT_NEW_TURN_RESOURCE_ADDITION, INITIAL_RESOURCE, INITIAL_VITALITY } from '@games/config/game-mechanics'
+import { GameAction } from '@games/interface/game.types'
 import { TeamSide } from '@teams/interface'
 import { DataSource, Repository } from 'typeorm'
 
@@ -30,7 +31,7 @@ export class PlayersRepository extends Repository<Player> {
       resource: initialResource,
       vitality: INITIAL_VITALITY,
       victoryPoints: 0,
-      hasMadeAction: false,
+      madeAction: null,
       biddingBanRemainingTurns: 0,
       hasMadeBid: false,
       attackBanRemainingTurns: 0,
@@ -65,9 +66,9 @@ export class PlayersRepository extends Repository<Player> {
     return player
   }
 
-  async setPlayerMadeAction(playerId: string): Promise<void> {
+  async setPlayerAction(playerId: string, actionType: GameAction): Promise<void> {
     try {
-      await this.save({ id: playerId, hasMadeAction: true })
+      await this.save({ id: playerId, madeAction: actionType })
     } catch (error) {
       throw new NotFoundException(`Player with ID ${playerId} not found.`)
     }
@@ -77,7 +78,7 @@ export class PlayersRepository extends Repository<Player> {
     try {
       await this.save({
         id: playerId,
-        hasMadeAction: false,
+        madeAction: null,
       })
     } catch (error) {
       throw new NotFoundException(`Player with ID ${playerId} not found.`)

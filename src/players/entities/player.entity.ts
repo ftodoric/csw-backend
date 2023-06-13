@@ -1,4 +1,5 @@
 import { User } from '@auth/entities'
+import { GameAction } from '@games/interface/game.types'
 import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
@@ -23,8 +24,8 @@ export class Player {
   @Column()
   victoryPoints: number
 
-  @Column()
-  hasMadeAction: boolean
+  @Column({ nullable: true })
+  madeAction: GameAction
 
   @Column()
   biddingBanRemainingTurns: number

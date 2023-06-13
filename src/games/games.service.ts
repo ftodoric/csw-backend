@@ -27,7 +27,7 @@ import {
 import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
-import { GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
+import { GameAction, GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
 import { TimerGateway } from './timer.gateway'
 import { calculateDamage, gameEntityMap } from './utils/utils'
 
@@ -257,6 +257,13 @@ export class GamesService {
 
       const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
 
+      // On beginning of the team's turn reset their made action types
+      // Retain them during the opponents turn for information
+      const players = Object.values(PlayerType)
+      for (let i = 0; i < players.length; i++) {
+        await this.playersService.resetPlayerMadeAction(game[nextSide][players[i]].id)
+      }
+
       await this.gamesRepository.save({
         id: game.id,
         // Reset and checkpoint the time
@@ -280,28 +287,8 @@ export class GamesService {
     }
   }
 
-  async setNextTurnIfLastTeamAction(gameId: string, entityPlayer: Player) {
-    // Flag the player that made an action
-    await this.playersService.setPlayerMadeAction(entityPlayer.id)
-
-    // Find active team
-    const game = await this.gamesRepository.getGameById(gameId)
-    let team
-    if (game.activeSide === TeamSide.Blue) {
-      team = await this.teamsService.getTeamById(game.blueTeam.id)
-    } else {
-      team = await this.teamsService.getTeamById(game.redTeam.id)
-    }
-
-    if (
-      team.peoplePlayer.hasMadeAction &&
-      team.industryPlayer.hasMadeAction &&
-      team.governmentPlayer.hasMadeAction &&
-      team.energyPlayer.hasMadeAction &&
-      team.intelligencePlayer.hasMadeAction
-    ) {
-      await this.nextTurn(gameId)
-    }
+  async setPlayerMadeAction(playerId: string, madeAction: GameAction) {
+    await this.playersService.setPlayerMadeAction(playerId, madeAction)
   }
 
   async setGameOver(gameId: string) {
@@ -401,7 +388,12 @@ export class GamesService {
     }
   }
 
-  async attack(game: Game, entityPlayer: Player, resourceSpent: number, diceRoll: number): Promise<void> {
+  async attack(game: Game, entityPlayer: Player, resourceSpent: number): Promise<void> {
+    // Roll the dice
+    const min = 1
+    const max = 7
+    const diceRoll = Math.floor(Math.random() * (max - min) + min)
+
     const attackStrength = combatResolutionTable[resourceSpent - 1][diceRoll - 1]
 
     // Russian Government objective - Control the Trolls

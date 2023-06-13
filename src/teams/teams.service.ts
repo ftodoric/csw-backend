@@ -29,9 +29,6 @@ export class TeamsService {
     const playerTypes = Object.values(PlayerType)
 
     for (let i = 0; i < playerTypes.length; i++) {
-      // Reset has made action
-      await this.playersService.resetPlayerMadeAction(team[playerTypes[i]].id)
-
       // Resest has made bid
       await this.playersService.resetPlayerMadeBid(team[playerTypes[i]].id)
     }
