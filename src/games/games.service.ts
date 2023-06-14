@@ -213,9 +213,13 @@ export class GamesService {
     // Reduce counters for all active bans for previous active team
     await this.playersService.decrementConditionCounters(gameId, game.activeSide)
 
-    // After every month check for objectives
+    // After every month
     if (game.activeSide === TeamSide.Blue) {
+      // Check for objectives
       await this.checkMonthlyObjectives(gameId, game.activePeriod)
+
+      // Lift Banking Error resource transferal ban
+      await this.teamsService.setCanTransferResource(game[game.activeSide].id, true)
     }
 
     // Recovery management
@@ -884,6 +888,9 @@ export class GamesService {
         break
 
       case EventCardName.BankingError:
+        await this.teamsService.setCanTransferResource(game.blueTeam.id, false)
+        break
+
       case EventCardName.Embargoed:
         break
 

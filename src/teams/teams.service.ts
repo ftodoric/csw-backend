@@ -53,4 +53,11 @@ export class TeamsService {
       isEventCardRead: value,
     })
   }
+
+  async setCanTransferResource(teamId: string, value: boolean): Promise<void> {
+    await this.teamsRepository.save({
+      id: teamId,
+      canTransferResource: value,
+    })
+  }
 }
