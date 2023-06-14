@@ -731,12 +731,16 @@ export class GamesService {
     }
 
     // Energetic Bear = Those who can't, steal
-    if (activePeriod === GamePeriod.April && game.redTeam.industryPlayer.vitality > INITIAL_VITALITY) {
-      await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 1)
+    if (activePeriod === GamePeriod.April) {
+      if (game.redTeam.industryPlayer.vitality > INITIAL_VITALITY) {
+        await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 1)
+      }
       await this.gamesRepository.setEnergeticBearAprilVitality(game.id, Number(game.redTeam.industryPlayer.vitality))
     }
-    if (activePeriod === GamePeriod.August && game.redTeam.industryPlayer.vitality > game.energeticBearAprilVitality) {
-      await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 3)
+    if (activePeriod === GamePeriod.August) {
+      if (game.redTeam.industryPlayer.vitality > game.energeticBearAprilVitality) {
+        await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 3)
+      }
       await this.gamesRepository.setEnergeticBearAugustVitality(game.id, Number(game.redTeam.industryPlayer.vitality))
     }
     if (
