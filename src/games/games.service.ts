@@ -240,9 +240,6 @@ export class GamesService {
 
       await this.timerGateway.stopTimer(gameId)
     } else {
-      // Determine whether a team gets an asset
-      await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
-
       // Supply another asset to the market every month
       if (game.activeSide === TeamSide.Blue) {
         await this.assetsService.supplyAssetToMarket(gameId)
@@ -257,6 +254,13 @@ export class GamesService {
         await this.teamsService.setEventCardRead(game.redTeam.id, false)
 
         await this.applyEventCardEffect(gameId)
+      }
+
+      // Skip for Russian Side if Embargoed Card is drawn
+      const { drawnEventCard } = await this.gamesRepository.getGameById(gameId)
+      if (!(game.activeSide === TeamSide.Blue && drawnEventCard === EventCardName.Embargoed)) {
+        // Determine whether a team gets an asset
+        await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
       }
 
       const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
@@ -276,8 +280,6 @@ export class GamesService {
         activeSide: nextSide,
         activePeriod: nextPeriod,
       })
-
-      const { drawnEventCard } = await this.getGameById(gameId)
 
       // Event Card People's Revolt effect
       if (!(drawnEventCard === EventCardName.PeoplesRevolt && game.activeSide === TeamSide.Blue)) {
@@ -892,6 +894,7 @@ export class GamesService {
         break
 
       case EventCardName.Embargoed:
+        await this.playersService.banBidding(gameId, TeamSide.Red, PlayerType.Intelligence, 1)
         break
 
       case EventCardName.LaxOpSec:
