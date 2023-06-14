@@ -1,5 +1,5 @@
 import { RoomsTimers } from '@games/interface/timer.types'
-import { TimerGateway } from '@games/timer.gateway'
+import { WSGateway } from '@games/ws.gateway'
 import { Socket } from 'socket.io'
 
 /**
@@ -23,8 +23,8 @@ export const getGameIdQuery = (client: Socket) => {
 
 export const getRoomName = (gameId: string) => `room:${gameId}`
 
-export const startRoomTimer = (timerGateway: TimerGateway, gameId: string, turnsRemainingTime: number) => {
-  const roomsTimers = timerGateway.getRoomsTimers()
+export const startRoomTimer = (wsGateway: WSGateway, gameId: string, turnsRemainingTime: number) => {
+  const roomsTimers = wsGateway.getRoomsTimers()
   let time = turnsRemainingTime
 
   roomsTimers[gameId] = { current: time, timer: null }
@@ -35,10 +35,10 @@ export const startRoomTimer = (timerGateway: TimerGateway, gameId: string, turns
     roomsTimers[gameId]['current'] = time
 
     if (time > 0) {
-      timerGateway.handleTimerTick(gameId)
+      wsGateway.handleTimerTick(gameId)
       time--
     } else {
-      timerGateway.handleTimerTimeout(gameId)
+      wsGateway.handleTimerTimeout(gameId)
     }
   }, 1000)
 

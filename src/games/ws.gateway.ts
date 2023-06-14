@@ -15,7 +15,7 @@ import { RoomsTimers, TimerEvents } from './interface/timer.types'
 import { clearRoomTimer, getGameIdQuery, getRoomName, startRoomTimer } from './utils/rooms'
 
 @WebSocketGateway()
-export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WSGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server
   private roomsTimers: RoomsTimers = {}

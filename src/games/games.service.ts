@@ -28,8 +28,8 @@ import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
 import { GameAction, GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
-import { TimerGateway } from './timer.gateway'
 import { calculateDamage, gameEntityMap } from './utils/utils'
+import { WSGateway } from './ws.gateway'
 
 @Injectable()
 export class GamesService {
@@ -40,7 +40,7 @@ export class GamesService {
     @Inject(forwardRef(() => PlayersService)) private playersService: PlayersService,
     private assetsService: AssetsService,
     private eventCardsService: EventCardsService,
-    @Inject(forwardRef(() => TimerGateway)) private timerGateway: TimerGateway
+    @Inject(forwardRef(() => WSGateway)) private wsGateway: WSGateway
   ) {}
 
   /**
@@ -238,7 +238,7 @@ export class GamesService {
     if (isGameOver) {
       await this.setGameOver(gameId)
 
-      await this.timerGateway.stopTimer(gameId)
+      await this.wsGateway.stopTimer(gameId)
     } else {
       // Supply another asset to the market every month
       if (game.activeSide === TeamSide.Blue) {
@@ -289,7 +289,7 @@ export class GamesService {
         )
       }
 
-      await this.timerGateway.handleRestartTimer(game.id)
+      await this.wsGateway.handleRestartTimer(game.id)
     }
   }
 
@@ -390,7 +390,7 @@ export class GamesService {
 
     if (Number(newVitality) === 0) {
       await this.setGameOver(gameId)
-      await this.timerGateway.stopTimer(gameId)
+      await this.wsGateway.stopTimer(gameId)
     }
   }
 
@@ -518,7 +518,7 @@ export class GamesService {
 
     if (attackEndedTheGame) {
       await this.setGameOver(game.id)
-      await this.timerGateway.stopTimer(game.id)
+      await this.wsGateway.stopTimer(game.id)
     }
 
     await this.gamesRepository.save({
