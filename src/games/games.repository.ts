@@ -32,6 +32,7 @@ export class GamesRepository extends Repository<Game> {
         growCapacityCurrentQuartersStreak: 0,
         growCapacityMaxQuartersStreak: 0,
         isRecoveryManagementActive: false,
+        recordKeepingSheet: `<h1>January</h1><p><span id="card">[EVENT CARD]</span> ${game.drawnEventCard} is drawn</p>`,
       })
     } catch (error) {
       // Duplicate game
@@ -193,5 +194,14 @@ export class GamesRepository extends Repository<Game> {
 
   async setEnergeticBearAugustVitality(gameId: string, vitality: number): Promise<void> {
     await this.save({ id: gameId, energeticBearAugustVitality: vitality })
+  }
+
+  async addRecord(gameId: string, record: string): Promise<void> {
+    const { recordKeepingSheet } = await this.getGameById(gameId)
+
+    await this.save({
+      id: gameId,
+      recordKeepingSheet: recordKeepingSheet + record,
+    })
   }
 }

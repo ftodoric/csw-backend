@@ -81,6 +81,17 @@ export class WSGateway implements OnGatewayConnection, OnGatewayDisconnect {
     })
   }
 
+  /**
+   * Sends a record to the client's message log.
+   * @param gameId
+   * @param time
+   */
+  async handleRecordLog(gameId: string, record: string) {
+    this.server.to(getRoomName(gameId)).emit(TimerEvents.Log, {
+      record,
+    })
+  }
+
   async handleTimerTimeout(gameId: string) {
     const game = await this.gamesService.getGameById(gameId)
 

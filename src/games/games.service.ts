@@ -28,7 +28,7 @@ import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
 import { GameAction, GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
-import { calculateDamage, gameEntityMap } from './utils/utils'
+import { calculateDamage, gameEntityMap, gamePeriodMap } from './utils/utils'
 import { WSGateway } from './ws.gateway'
 
 @Injectable()
@@ -240,12 +240,17 @@ export class GamesService {
 
       await this.wsGateway.stopTimer(gameId)
     } else {
+      const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
+
       // Supply another asset to the market every month
       if (game.activeSide === TeamSide.Blue) {
         await this.assetsService.supplyAssetToMarket(gameId)
 
-        // Draw an Event Card each month
+        await this.addNewRecord(gameId, `<h1>${gamePeriodMap[nextPeriod]}</h1>`)
         const drawnCard = await this.eventCardsService.drawCard(gameId)
+        await this.addNewRecord(gameId, `<p><span id="card">[EVENT CARD]</span> ${drawnCard} is drawn</p>`)
+
+        // Draw an Event Card each month
         await this.gamesRepository.save({
           id: gameId,
           drawnEventCard: drawnCard,
@@ -262,8 +267,6 @@ export class GamesService {
         // Determine whether a team gets an asset
         await this.assetsService.checkIfAnyBidOnMarketIsWon(gameId, game.activeSide)
       }
-
-      const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
 
       // On beginning of the team's turn reset their made action types
       // Retain them during the opponents turn for information
@@ -698,15 +701,31 @@ export class GamesService {
     // UK Government - Election Time
     if (game.blueTeam.peoplePlayer.resource >= 4) {
       await this.playersService.addVictoryPoints(game.blueTeam.governmentPlayer.id, 1)
+      await this.addNewRecord(
+        gameId,
+        '<p><span id="objective">[OBJECTIVE]</span> UK Government <span id="victory-points">+1 VP</span> "Election time"</p>'
+      )
     }
 
     // UK PLC - Weather the Brexit storm
     if (activePeriod === GamePeriod.April && game.blueTeam.industryPlayer.resource >= 3) {
       await this.playersService.addVictoryPoints(game.blueTeam.industryPlayer.id, 2)
+      await this.addNewRecord(
+        gameId,
+        '<p><span id="objective">[OBJECTIVE]</span> UK PLC <span id="victory-points">+2 VP</span> "Weather the Brexit storm"</p>'
+      )
     } else if (activePeriod === GamePeriod.August && game.blueTeam.industryPlayer.resource >= 6) {
       await this.playersService.addVictoryPoints(game.blueTeam.industryPlayer.id, 3)
+      await this.addNewRecord(
+        gameId,
+        '<p><span id="objective">[OBJECTIVE]</span> UK PLC <span id="victory-points">+3 VP</span> "Weather the Brexit storm"</p>'
+      )
     } else if (activePeriod === GamePeriod.December && game.blueTeam.industryPlayer.resource >= 9) {
       await this.playersService.addVictoryPoints(game.blueTeam.industryPlayer.id, 4)
+      await this.addNewRecord(
+        gameId,
+        '<p><span id="objective">[OBJECTIVE]</span> UK PLC <span id="victory-points">+4 VP</span> "Weather the Brexit storm"</p>'
+      )
     }
 
     // GCHQ - Recruitment Drive streak
@@ -923,5 +942,10 @@ export class GamesService {
       default:
         break
     }
+  }
+
+  async addNewRecord(gameId: string, record: string): Promise<void> {
+    await this.gamesRepository.addRecord(gameId, record)
+    await this.wsGateway.handleRecordLog(gameId, record)
   }
 }

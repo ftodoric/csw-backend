@@ -1,4 +1,4 @@
-import { GameEntity } from '@games/interface/game.types'
+import { GameEntity, GamePeriod } from '@games/interface/game.types'
 import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
 
@@ -34,4 +34,19 @@ export const calculateDamageV2 = (attackStrength: number, armor: number, isSplas
 
   // todo define splash damage ratio config variable
   return isSplashDamage ? damage / 2 : damage
+}
+
+export const gamePeriodMap = {
+  [GamePeriod.January]: 'January',
+  [GamePeriod.February]: 'February',
+  [GamePeriod.March]: 'March',
+  [GamePeriod.April]: 'April',
+  [GamePeriod.May]: 'May',
+  [GamePeriod.June]: 'June',
+  [GamePeriod.July]: 'July',
+  [GamePeriod.August]: 'August',
+  [GamePeriod.September]: 'September',
+  [GamePeriod.October]: 'October',
+  [GamePeriod.November]: 'November',
+  [GamePeriod.December]: 'December',
 }

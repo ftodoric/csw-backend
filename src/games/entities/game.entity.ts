@@ -75,6 +75,9 @@ export class Game {
   @Column()
   drawnEventCard: EventCardName
 
+  @Column()
+  recordKeepingSheet: string
+
   @OneToOne(() => Team, (team) => team.id, { eager: true })
   @JoinColumn()
   blueTeam: Team
