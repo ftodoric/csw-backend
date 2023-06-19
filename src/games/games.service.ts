@@ -251,12 +251,34 @@ export class GamesService {
       (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) ||
       allVitalities.some((vitality) => Number(vitality) === 0)
     if (isGameOver) {
-      await this.setGameOver(gameId)
-
       // Attack method ended the game and stopped the timer
       if (!allVitalities.some((vitality) => Number(vitality) === 0)) {
+        await this.setGameOver(gameId)
         await this.wsGateway.stopTimer(gameId)
       }
+
+      // Add final result record
+      const game = await this.gamesRepository.getGameById(gameId)
+      const ukTotal =
+        game.blueTeam.governmentPlayer.victoryPoints +
+        game.blueTeam.peoplePlayer.victoryPoints +
+        game.blueTeam.industryPlayer.victoryPoints +
+        game.blueTeam.energyPlayer.victoryPoints +
+        game.blueTeam.intelligencePlayer.victoryPoints
+
+      const russiaTotal =
+        game.redTeam.governmentPlayer.victoryPoints +
+        game.redTeam.peoplePlayer.victoryPoints +
+        game.redTeam.industryPlayer.victoryPoints +
+        game.redTeam.energyPlayer.victoryPoints +
+        game.redTeam.intelligencePlayer.victoryPoints
+
+      this.addNewRecord(
+        gameId,
+        `<h2 id="tie"><span id=${ukTotal > russiaTotal ? 'uk' : ''}>UK ${ukTotal}</span> - <span id=${
+          russiaTotal > ukTotal ? 'russia' : ''
+        }>${russiaTotal} Russia</span></h2>`
+      )
     } else {
       const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
 
