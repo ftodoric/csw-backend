@@ -54,10 +54,10 @@ export class Game {
   @Column()
   recruitmentDriveMaxQuartersStreak: number
 
-  @Column()
+  @Column('decimal', { scale: 1 })
   energeticBearAprilVitality: number
 
-  @Column()
+  @Column('decimal', { scale: 1 })
   energeticBearAugustVitality: number
 
   @Column()

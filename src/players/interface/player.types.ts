@@ -1,7 +1,7 @@
 export enum PlayerType {
+  Government = 'governmentPlayer',
   People = 'peoplePlayer',
   Industry = 'industryPlayer',
-  Government = 'governmentPlayer',
   Energy = 'energyPlayer',
   Intelligence = 'intelligencePlayer',
 }

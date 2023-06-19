@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
+import { GamesService } from '@games'
 import { TeamSide } from '@teams/interface'
 
 import { AssetsRepository } from './assets.repository'
@@ -10,10 +11,17 @@ import { AssetStatus } from './interface'
 
 @Injectable()
 export class AssetsService {
-  constructor(@InjectRepository(AssetsRepository) private assetsRepository: AssetsRepository) {}
+  constructor(
+    @InjectRepository(AssetsRepository) private assetsRepository: AssetsRepository,
+    @Inject(forwardRef(() => GamesService)) private gamesService: GamesService
+  ) {}
 
   async createAsset(assetDto: AssetDto, gameId: string): Promise<string> {
     return await this.assetsRepository.createAsset(assetDto, gameId)
+  }
+
+  async getAssetById(id: string): Promise<Asset> {
+    return await this.assetsRepository.findOneBy({ id })
   }
 
   async getBlackMarketAssets(gameId: string): Promise<Asset[]> {
@@ -59,6 +67,14 @@ export class AssetsService {
       if (asset.turnsFromFirstBid > 1 && asset.lastBidSide !== previousSide) {
         // Award the asset to the team that's on the next turn
         await this.assetsRepository.save({ id: asset.id, status: AssetStatus.Secured })
+
+        // Log an auction win
+        this.gamesService.addNewRecord(
+          asset.gameId,
+          `<p><span id="market">[BLACK MARKET]</span> ${
+            asset.blueTeamBid > asset.redTeamBid ? 'GCHQ' : 'SCS'
+          } secures ${asset.name} asset for its team as a highest bidder</p>`
+        )
       }
     })
   }

@@ -21,7 +21,7 @@ import { WSGateway } from './ws.gateway'
     TypeOrmModule.forFeature([Game]),
     TeamsModule,
     forwardRef(() => PlayersModule),
-    AssetsModule,
+    forwardRef(() => AssetsModule),
     EventCardsModule,
   ],
   exports: [GamesService],

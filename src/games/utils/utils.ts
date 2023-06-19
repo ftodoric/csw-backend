@@ -50,3 +50,20 @@ export const gamePeriodMap = {
   [GamePeriod.November]: 'November',
   [GamePeriod.December]: 'December',
 }
+
+export const entityNameMap = {
+  [TeamSide.Blue]: {
+    [PlayerType.Government]: 'UK Government',
+    [PlayerType.People]: 'Electorate',
+    [PlayerType.Industry]: 'UK PLC',
+    [PlayerType.Energy]: 'UK Energy',
+    [PlayerType.Intelligence]: 'GCHQ',
+  },
+  [TeamSide.Red]: {
+    [PlayerType.Government]: 'Russian Government',
+    [PlayerType.People]: 'Online Trolls',
+    [PlayerType.Industry]: 'Energetic Bear',
+    [PlayerType.Energy]: 'Rosenergoatom',
+    [PlayerType.Intelligence]: 'SCS',
+  },
+}

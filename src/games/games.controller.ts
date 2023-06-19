@@ -5,6 +5,7 @@ import { AssetName } from '@assets/interface'
 import { User } from '@auth/decorators'
 import { User as UserEntity } from '@auth/entities'
 import { JwtAuthGuard } from '@auth/jwt-auth.guard'
+import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
 
 import {
@@ -25,6 +26,7 @@ import {
   RansomwarePaymentAnswer,
   RansomwarePaymentPayload,
 } from './interface/game.types'
+import { entityNameMap } from './utils/utils'
 
 @Controller('games')
 @UseGuards(JwtAuthGuard)
@@ -54,6 +56,16 @@ export class GamesController {
   @Post('/:id/finishTurn')
   async finishTurn(@Param('id') gameId, @Body() data: FinishTurnPayload): Promise<void> {
     const game = await this.gamesService.getGameById(gameId)
+
+    // If player did nothing he abstained
+    const playerTypes = Object.keys(PlayerType)
+    const playerIdsThatMadeActions = Object.keys(data)
+    for (let i = 0; i < playerTypes.length; i++) {
+      const playerId = game[game.activeSide][PlayerType[playerTypes[i]]].id
+      if (!playerIdsThatMadeActions.includes(playerId)) {
+        await this.gamesService.setPlayerMadeAction(playerId, GameAction.ABSTAIN)
+      }
+    }
 
     // Iterate through every player action
     for (const playerId in data) {
@@ -109,6 +121,22 @@ export class GamesController {
             gameActionPayload.resourceAmount
           )
 
+          // Electorate objective log
+          if (entityPlayer.side === TeamSide.Blue && entityPlayer.type === PlayerType.People) {
+            await this.gamesService.addNewRecord(
+              gameId,
+              '<p><span id="objective">[OBJECTIVE]</span> Electorate <span id="victory-points">-1 VP</span> "Resist the drain"</p>'
+            )
+          }
+
+          // Log Distribute action
+          const sourceEntityName = entityNameMap[entityPlayer.side][entityPlayer.type]
+          const destinationEntityName = entityNameMap[targetPlayer.side][targetPlayer.type]
+          await this.gamesService.addNewRecord(
+            gameId,
+            `<p><span id="action">[ACTION]</span> ${sourceEntityName} sends <span id="resource">${gameActionPayload.resourceAmount} resource</span> to ${destinationEntityName}</p>`
+          )
+
           break
 
         case GameAction.REVITALISE:
@@ -134,6 +162,14 @@ export class GamesController {
           }
 
           await this.gamesService.revitalise(gameId, entityPlayer.id, gameActionPayload.revitalizationAmount)
+
+          // Log Revitalise action
+          await this.gamesService.addNewRecord(
+            gameId,
+            `<p><span id="action">[ACTION]</span> ${
+              entityNameMap[entityPlayer.side][entityPlayer.type]
+            } revitalises by <span id="vitality">${gameActionPayload.revitalizationAmount} vitality</span></p>`
+          )
 
           break
 
@@ -238,11 +274,11 @@ export class GamesController {
         break
 
       case AssetName.Education:
-        await this.gamesService.activateEducation(gameId)
+        await this.gamesService.activateEducation(gameId, assetId)
         break
 
       case AssetName.RecoveryManagement:
-        await this.gamesService.activateRecoveryManagement(gameId)
+        await this.gamesService.activateRecoveryManagement(gameId, assetId)
         break
 
       case AssetName.SoftwareUpdate:
@@ -253,12 +289,16 @@ export class GamesController {
           )
         }
 
-        await this.gamesService.activateSoftwareUpdate(game[data.teamSide][data.softwareUpdateTarget].id)
+        await this.gamesService.activateSoftwareUpdate(
+          gameId,
+          game[data.teamSide][data.softwareUpdateTarget].id,
+          assetId
+        )
 
         break
 
       case AssetName.BargainingChip:
-        await this.gamesService.activateBargainingChip(gameId)
+        await this.gamesService.activateBargainingChip(gameId, assetId)
         break
 
       case AssetName.NetworkPolicy:
@@ -269,11 +309,11 @@ export class GamesController {
           )
         }
 
-        await this.gamesService.activateNetworkPolicy(game[data.teamSide][data.networkPolicyTarget].id)
+        await this.gamesService.activateNetworkPolicy(gameId, assetId, game[data.teamSide][data.networkPolicyTarget].id)
         break
 
       case AssetName.Stuxnet20:
-        await this.gamesService.activateStuxnet(game[data.teamSide].intelligencePlayer.id)
+        await this.gamesService.activateStuxnet(gameId, assetId, game[data.teamSide].intelligencePlayer.id)
         break
 
       case AssetName.CyberInvestmentProgramme:
@@ -285,6 +325,8 @@ export class GamesController {
         }
 
         await this.gamesService.activateCyberInvestmentProgramme(
+          gameId,
+          assetId,
           game[data.teamSide][data.cyberInvestmentProgrammeTarget].id
         )
         break
@@ -297,7 +339,7 @@ export class GamesController {
           )
         }
 
-        await this.gamesService.activateRansomware(game[data.teamSide][data.ransomwareAttacker].id)
+        await this.gamesService.activateRansomware(gameId, assetId, game[data.teamSide][data.ransomwareAttacker].id)
 
         break
 
@@ -309,12 +351,14 @@ export class GamesController {
     await this.gamesService.setAssetActivated(assetId)
   }
 
-  @Post('/payRansomwareAttacker/:answer')
+  @Post('/:gameId/payRansomwareAttacker/:answer')
   async payRansomwareAttacker(
+    @Param('gameId') gameId: string,
     @Param('answer') answer: RansomwarePaymentAnswer,
     @Body() payload: RansomwarePaymentPayload
   ): Promise<void> {
     await this.gamesService.payRansomwareAttacker(
+      gameId,
       payload.attackerId,
       payload.victimId,
       answer === RansomwarePaymentAnswer.Yes

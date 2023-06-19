@@ -28,7 +28,7 @@ import { CreateGameDto } from './dto'
 import { Game } from './entities'
 import { GamesRepository } from './games.repository'
 import { GameAction, GameOutcome, GamePeriod, GameStatus } from './interface/game.types'
-import { calculateDamage, gameEntityMap, gamePeriodMap } from './utils/utils'
+import { calculateDamage, entityNameMap, gameEntityMap, gamePeriodMap } from './utils/utils'
 import { WSGateway } from './ws.gateway'
 
 @Injectable()
@@ -38,7 +38,7 @@ export class GamesService {
     private authService: AuthService,
     private teamsService: TeamsService,
     @Inject(forwardRef(() => PlayersService)) private playersService: PlayersService,
-    private assetsService: AssetsService,
+    @Inject(forwardRef(() => AssetsService)) private assetsService: AssetsService,
     private eventCardsService: EventCardsService,
     @Inject(forwardRef(() => WSGateway)) private wsGateway: WSGateway
   ) {}
@@ -234,11 +234,29 @@ export class GamesService {
     await this.teamsService.resetBothTeamsActions(game.blueTeam.id, game.redTeam.id)
 
     // Check if game ended
-    const isGameOver = game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue
+    const allVitalities = [
+      game.blueTeam.governmentPlayer.vitality,
+      game.blueTeam.peoplePlayer.vitality,
+      game.blueTeam.industryPlayer.vitality,
+      game.blueTeam.energyPlayer.vitality,
+      game.blueTeam.intelligencePlayer.vitality,
+
+      game.redTeam.governmentPlayer.vitality,
+      game.redTeam.peoplePlayer.vitality,
+      game.redTeam.industryPlayer.vitality,
+      game.redTeam.energyPlayer.vitality,
+      game.redTeam.intelligencePlayer.vitality,
+    ]
+    const isGameOver =
+      (game.activePeriod === GamePeriod.December && game.activeSide === TeamSide.Blue) ||
+      allVitalities.some((vitality) => Number(vitality) === 0)
     if (isGameOver) {
       await this.setGameOver(gameId)
 
-      await this.wsGateway.stopTimer(gameId)
+      // Attack method ended the game and stopped the timer
+      if (!allVitalities.some((vitality) => Number(vitality) === 0)) {
+        await this.wsGateway.stopTimer(gameId)
+      }
     } else {
       const { nextSide, nextPeriod } = await getNextTurnActives(game.activeSide, game.activePeriod)
 
@@ -308,17 +326,34 @@ export class GamesService {
     const russianGovernmentVitality = Number(game.redTeam.governmentPlayer.vitality)
     if (russianGovernmentVitality < INITIAL_VITALITY) {
       await this.playersService.addVictoryPoints(game.blueTeam.governmentPlayer.id, 5)
+
+      await this.addNewRecord(
+        gameId,
+        '<p><span id="objective">[OBJECTIVE]</span> UK Government <span id="victory-points">+5 VP</span> "Aggressive outlook"</p>'
+      )
     }
 
     // GCHQ - Recruitment Drive
     // Check the streak and award accordingly
     const recruitmentDriveBonus = Math.max(2 * game.recruitmentDriveMaxQuartersStreak - 1, 0)
     await this.playersService.addVictoryPoints(game.blueTeam.intelligencePlayer.id, recruitmentDriveBonus)
+    if (recruitmentDriveBonus > 0) {
+      this.addNewRecord(
+        gameId,
+        `<p><span id="objective">[OBJECTIVE]</span> GCHQ <span id="victory-points">+${recruitmentDriveBonus} VP</span> "Recruitment drive"</p>`
+      )
+    }
 
     // Rosenergoatom - Grow capacity
     // Check the streak and award accordingly
     const growCapacityBonus = Math.max(2 * game.growCapacityMaxQuartersStreak - 1, 0)
     await this.playersService.addVictoryPoints(game.redTeam.energyPlayer.id, growCapacityBonus)
+    if (growCapacityBonus > 0) {
+      this.addNewRecord(
+        gameId,
+        `<p><span id="objective">[OBJECTIVE]</span> Rosenergoatom <span id="victory-points">+${growCapacityBonus} VP</span> "Grow capacity"</p>`
+      )
+    }
 
     // 2. POINTS CALCULATION
     game = await this.getGameById(gameId)
@@ -410,14 +445,26 @@ export class GamesService {
     if (isOnlineTrolls) {
       if (resourceSpent === 3 || resourceSpent === 4) {
         await this.playersService.addVictoryPoints(game.redTeam.governmentPlayer.id, -1)
+        await this.addNewRecord(
+          game.id,
+          '<p><span id="objective">[OBJECTIVE]</span> Russian Government <span id="victory-points">-1 VP</span> "Controll the Trolls"</p>'
+        )
       } else if (resourceSpent === 5 || resourceSpent === 6) {
         await this.playersService.addVictoryPoints(game.redTeam.governmentPlayer.id, -2)
+        await this.addNewRecord(
+          game.id,
+          '<p><span id="objective">[OBJECTIVE]</span> Russian Government <span id="victory-points">-2 VP</span> "Controll the Trolls"</p>'
+        )
       }
     }
 
     // Online Trolls objective - Success breeds confidence
     if (isOnlineTrolls && resourceSpent >= 3 && entityPlayer.hasRansomwareAttack) {
       await this.playersService.addVictoryPoints(entityPlayer.id, 4)
+      await this.addNewRecord(
+        game.id,
+        '<p><span id="objective">[OBJECTIVE]</span> Online Trolls <span id="victory-points">+4 VP</span> "Success breeds confidence"</p>'
+      )
     }
 
     const targetSide = entityPlayer.side === TeamSide.Blue ? TeamSide.Red : TeamSide.Blue
@@ -447,8 +494,36 @@ export class GamesService {
       // But do the splash damage
       const hasImmunity = game[targetSide][targetType].damageImmunityDuration > 0
       damage = hasImmunity ? 0 : damage
+
+      // Log successful attack action
+      await this.addNewRecord(
+        game.id,
+        `<p><span id="action">[ACTION]</span> ${
+          entityNameMap[entityPlayer.side][entityPlayer.type]
+        } <span id="attack">attacks</span> ${
+          entityNameMap[targetSide][targetType]
+        }. <span id="resource">${resourceSpent} resource</span> is spent, dice rolls a "${diceRoll}" and attack deals <span id="attack">${damage} damage</span>.${
+          entityPlayer.hasDoubleDamage ? ' Stuxnet 2.0 is applied.' : ''
+        }${entityPlayer.hasRansomwareAttack ? ' Ransomware is applied.' : ''}</p>`
+      )
     } else {
       damage = calculateDamage(Math.abs(attackStrength), entityPlayer.armor, entityPlayer.armorDuration)
+
+      // Log backfired attack action
+      const didBackfire = attackStrength !== 0
+
+      const logText = didBackfire
+        ? `Attack backfires and deals <span id="attack">${damage} damage</span>.`
+        : `Attack deals no damage.`
+
+      await this.addNewRecord(
+        game.id,
+        `<p><span id="action">[ACTION]</span> ${
+          entityNameMap[entityPlayer.side][entityPlayer.type]
+        } <span id="attack">attacks</span> ${
+          entityNameMap[targetSide][targetType]
+        }. <span id="resource">${resourceSpent} resource</span> is spent, player rolls a "${diceRoll}". ${logText}</p>`
+      )
     }
 
     // Ransomware attack is one time use
@@ -502,6 +577,13 @@ export class GamesService {
         // If Blue Team attacked and caused some of it's own entities to drop to 0, do not reward anyone
         if (entityPlayer.side === TeamSide.Red) {
           await this.playersService.addVictoryPoints(game[entityPlayer.side][entityPlayer.type].id, 10)
+
+          this.addNewRecord(
+            game.id,
+            `<p>${entityNameMap[entityPlayer.side][entityPlayer.type]} attacks brings ${
+              entityNameMap[targetSide][targetType]
+            } to <span id="vitality">0 vitality</span>. <span id="victory-points">+10 VP</span></p>`
+          )
           break
         }
         break
@@ -514,8 +596,15 @@ export class GamesService {
         // Reward Blue Team 10 VP
         if (entityPlayer.side === TeamSide.Blue) {
           await this.playersService.addVictoryPoints(game[entityPlayer.side][entityPlayer.type].id, 10)
+          this.addNewRecord(
+            game.id,
+            `<p>${entityNameMap[entityPlayer.side][entityPlayer.type]} attacks brings ${
+              entityNameMap[targetSide][targetType]
+            } to <span id="vitality">0 vitality</span>. <span id="victory-points">+10 VP</span></p>`
+          )
           break
         }
+        break
       }
     }
 
@@ -548,6 +637,17 @@ export class GamesService {
 
     // Place the bid
     await this.assetsService.makeBid(assetId, side, bidAmount)
+
+    // Log the bid
+    const biddingPlayer = await this.playersService.getPlayerById(playerId)
+    this.assetsService.getAssetById(assetId).then((asset) => {
+      this.addNewRecord(
+        asset.gameId,
+        `<p><span id="market">[BLACK MARKET]</span> ${
+          entityNameMap[biddingPlayer.side][biddingPlayer.type]
+        } bids <span id="resource">${bidAmount} resource</span> on ${asset.name}</p>`
+      )
+    })
   }
 
   /**
@@ -575,12 +675,16 @@ export class GamesService {
         // UK gains Software Update asset.
         if (playerType === PlayerType.Industry || playerType === PlayerType.Intelligence) {
           this.giveAssetToTeam(gameId, 'Software Update', TeamSide.Blue)
+
+          this.addNewRecord(gameId, `<p>UK gains ${AssetName.SoftwareUpdate} asset.</p>`)
         }
 
         // -1 Penalty for Online Trolls
         // UK gains Education asset.
         if (playerType === PlayerType.People) {
           this.giveAssetToTeam(gameId, 'Education', TeamSide.Blue)
+
+          this.addNewRecord(gameId, `<p>UK gains ${AssetName.Education} asset.</p>`)
         }
 
         // -1 Penalty for SCS
@@ -589,6 +693,8 @@ export class GamesService {
           // Add a ban to queue
           // When set to negative value, next turn turns it to its equivalent positive to mark beginning of the ban
           await this.playersService.banBidding(gameId, side, playerType, -2)
+
+          this.addNewRecord(gameId, `<p>SCS cannot bid on Black Market for 2 turns.</p>`)
         }
       }
 
@@ -598,12 +704,16 @@ export class GamesService {
         // GCHQ cannot launch attacks for 2 turns.
         if (playerType === PlayerType.Intelligence) {
           await this.playersService.banAttack(gameId, side, playerType, -2)
+
+          this.addNewRecord(gameId, `<p>GCHQ cannot launch attacks for 2 turns.</p>`)
         }
 
         // -1 Penalty for UK Government
         // Russia gains Bargaining Chip asset.
         if (playerType === PlayerType.Government) {
           this.giveAssetToTeam(gameId, 'Bargaining Chip', TeamSide.Red)
+
+          this.addNewRecord(gameId, `<p>Russia gains Bargaining Chip asset.</p>`)
         }
       }
     }
@@ -617,6 +727,8 @@ export class GamesService {
         if (playerType === PlayerType.Industry) {
           this.giveAssetToTeam(gameId, 'Software Update', TeamSide.Blue)
           this.giveAssetToTeam(gameId, 'Recovery Management', TeamSide.Blue)
+
+          this.addNewRecord(gameId, `<p>UK gains Software Update and Recovery Management assets.</p>`)
         }
 
         // -2 Penalty for Online Trolls
@@ -624,6 +736,8 @@ export class GamesService {
         if (playerType === PlayerType.People) {
           this.giveAssetToTeam(gameId, 'Education', TeamSide.Blue)
           await this.playersService.banAttack(gameId, side, playerType, -2)
+
+          this.addNewRecord(gameId, `<p>UK gains Education asset, Online Trolls cannot launch attacks for 2 turns.</p>`)
         }
 
         // -2 Penalty for SCS
@@ -643,6 +757,8 @@ export class GamesService {
           )
 
           await this.assetsService.giveAssetToTeam(specialAssetId, TeamSide.Blue)
+
+          this.addNewRecord(gameId, `<p>UK may choose to open up an attack vector at no cost.</p>`)
         }
       }
 
@@ -655,6 +771,11 @@ export class GamesService {
 
           const game = await this.getGameById(gameId)
           await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 1)
+
+          this.addNewRecord(
+            gameId,
+            `<p>GCHQ cannot perform any actions for 2 turns, UK Government loses <span id="vitality">1 vitality</span>.</p>`
+          )
         }
 
         // -2 Penalty for UK Government
@@ -665,6 +786,11 @@ export class GamesService {
           const game = await this.getGameById(gameId)
           await this.playersService.reducePlayerVitality(game.blueTeam.governmentPlayer.id, 2)
           await this.playersService.reducePlayerResource(game.blueTeam.governmentPlayer.id, 2)
+
+          this.addNewRecord(
+            gameId,
+            `<p>Russia gains Bargaining Chip asset, UK Government loses additional <span id="vitality">2 vitality</span> and <span id="resource">2 resource</span>.</p>`
+          )
         }
       }
     }
@@ -745,39 +871,68 @@ export class GamesService {
     // UK Energy - Grow Capacity
     if (activePeriod === GamePeriod.June && game.blueTeam.energyPlayer.vitality >= 6) {
       await this.playersService.addVictoryPoints(game.blueTeam.energyPlayer.id, 2)
+      this.addNewRecord(
+        gameId,
+        `<p><span id="objective">[OBJECTIVE]</span> UK Energy <span id="victory-points">+2 VP</span> "Grow capacity"</p>`
+      )
     }
     if (activePeriod === GamePeriod.December && game.blueTeam.energyPlayer.vitality >= 9) {
       await this.playersService.addVictoryPoints(game.blueTeam.energyPlayer.id, 3)
+      this.addNewRecord(
+        gameId,
+        `<p><span id="objective">[OBJECTIVE]</span> UK Energy <span id="victory-points">+3 VP</span> "Grow capacity"</p>`
+      )
     }
 
     // Russian Government - Some animals are more equal than others
     if (game.redTeam.governmentPlayer.resource >= 3) {
       await this.playersService.addVictoryPoints(game.redTeam.governmentPlayer.id, 1)
+
+      await this.addNewRecord(
+        gameId,
+        '<p><span id="objective">[OBJECTIVE]</span> Russian Government <span id="victory-points">+1 VP</span> "Some animals are more equal than others"</p>'
+      )
     }
 
     // Energetic Bear = Those who can't, steal
     if (activePeriod === GamePeriod.April) {
       if (game.redTeam.industryPlayer.vitality > INITIAL_VITALITY) {
         await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 1)
+        await this.addNewRecord(
+          gameId,
+          `<p><span id="objective">[OBJECTIVE]</span> Energetic Bear <span id="victory-points">+1 VP</span> "Those who can't, steal"</p>`
+        )
       }
       await this.gamesRepository.setEnergeticBearAprilVitality(game.id, Number(game.redTeam.industryPlayer.vitality))
     }
     if (activePeriod === GamePeriod.August) {
-      if (game.redTeam.industryPlayer.vitality > game.energeticBearAprilVitality) {
+      if (game.redTeam.industryPlayer.vitality > Number(game.energeticBearAprilVitality)) {
         await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 3)
+        await this.addNewRecord(
+          gameId,
+          `<p><span id="objective">[OBJECTIVE]</span> Energetic Bear <span id="victory-points">+3 VP</span> "Those who can't, steal"</p>`
+        )
       }
       await this.gamesRepository.setEnergeticBearAugustVitality(game.id, Number(game.redTeam.industryPlayer.vitality))
     }
     if (
       activePeriod === GamePeriod.December &&
-      game.redTeam.industryPlayer.vitality > game.energeticBearAugustVitality
+      game.redTeam.industryPlayer.vitality > Number(game.energeticBearAugustVitality)
     ) {
       await this.playersService.addVictoryPoints(game.redTeam.industryPlayer.id, 5)
+      await this.addNewRecord(
+        gameId,
+        `<p><span id="objective">[OBJECTIVE]</span> Energetic Bear <span id="victory-points">+5 VP</span> "Those who can't, steal"</p>`
+      )
     }
 
     // SCS - Win the arms race
     if (await this.assetsService.hasRussiaMoreAttackAssetsThanUKDefenceAssets(gameId)) {
       await this.playersService.addVictoryPoints(game.redTeam.intelligencePlayer.id, 2)
+      await this.addNewRecord(
+        gameId,
+        `<p><span id="objective">[OBJECTIVE]</span> SCS <span id="victory-points">+2 VP</span> "Win the arms race"</p>`
+      )
     }
 
     // Rosenergoatom - Grow Capacity streak
@@ -803,6 +958,11 @@ export class GamesService {
           id: gameId,
           isRussianGovernmentAttacked: true,
         })
+
+        this.addNewRecord(
+          gameId,
+          `<p><span id="asset">[ASSET]</span> UK opens up an attack vector on Russian Government</p>`
+        )
         break
 
       case PlayerType.Energy:
@@ -811,11 +971,16 @@ export class GamesService {
             id: gameId,
             isRosenergoatomAttacked: true,
           })
+          this.addNewRecord(
+            gameId,
+            `<p><span id="asset">[ASSET]</span> GCHQ opens up an attack vector on Rosenergoatom</p>`
+          )
         } else {
           this.gamesRepository.save({
             id: gameId,
             isUkEnergyAttacked: true,
           })
+          this.addNewRecord(gameId, `<p><span id="asset">[ASSET]</span> SCS opens up an attack vector on UK Energy</p>`)
         }
         break
 
@@ -825,63 +990,155 @@ export class GamesService {
   }
 
   // Electorate suffers half of any damage for 3 turns
-  async activateEducation(gameId: string): Promise<void> {
+  async activateEducation(gameId: string, assetId: string): Promise<void> {
     const { blueTeam } = await this.gamesRepository.getGameById(gameId)
     await this.playersService.activateArmor(blueTeam.peoplePlayer.id, 50, 3)
+
+    // Log activation
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    this.addNewRecord(gameId, `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Education asset</p>`)
   }
 
   // Russia Government suffers half of any damage for 3 turns
-  async activateBargainingChip(gameId: string): Promise<void> {
+  async activateBargainingChip(gameId: string, assetId: string): Promise<void> {
     const { redTeam } = await this.gamesRepository.getGameById(gameId)
     await this.playersService.activateArmor(redTeam.governmentPlayer.id, 50, 3)
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Bargaining Chip asset</p>`
+    )
   }
 
   // If UK PLC suffered any damage this turn, increase vitality by 1
-  async activateRecoveryManagement(gameId: string): Promise<void> {
+  async activateRecoveryManagement(gameId: string, assetId: string): Promise<void> {
     await this.gamesRepository.save({ id: gameId, isRecoveryManagementActive: true })
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Recovery Management asset</p>`
+    )
   }
 
   // Renders an entity immune to direct attacks for 2 turns
-  async activateSoftwareUpdate(playerId: string): Promise<void> {
+  async activateSoftwareUpdate(gameId: string, playerId: string, assetId: string): Promise<void> {
     await this.playersService.activateDamageImmunity(playerId, 2)
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    const immunePlayer = await this.playersService.getPlayerById(playerId)
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Software Update asset. ${
+        entityNameMap[immunePlayer.side][immunePlayer.type]
+      } is now immune to direct attacks for 2 turns.</p>`
+    )
   }
 
   // Renders Entity immune for splash damage, but only 2 resource can be transferred to or from it each turn
-  async activateNetworkPolicy(playerId: string): Promise<void> {
+  async activateNetworkPolicy(gameId: string, assetId: string, playerId: string): Promise<void> {
     await this.playersService.activateSplashImmunity(playerId)
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    const immunePlayer = await this.playersService.getPlayerById(playerId)
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Network Policy asset. ${
+        entityNameMap[immunePlayer.side][immunePlayer.type]
+      } is now immune to splash damage, but only <span id="resource">2 resource</span> can be transferred to or from it each turn.</p>`
+    )
   }
 
   // Direct attack from intelligence players deal double damage to energy players
-  async activateStuxnet(playerId: string): Promise<void> {
+  async activateStuxnet(gameId: string, assetId: string, playerId: string): Promise<void> {
     await this.playersService.activateDoubleDamage(playerId)
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    const immunePlayer = await this.playersService.getPlayerById(playerId)
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Stuxnet 2.0 asset. Next direct attack from ${
+        entityNameMap[immunePlayer.side][immunePlayer.type]
+      } deals double damage</p>`
+    )
   }
 
   // Entity can revitalise at 1 less resource cost
-  async activateCyberInvestmentProgramme(playerId: string): Promise<void> {
+  async activateCyberInvestmentProgramme(gameId: string, assetId: string, playerId: string): Promise<void> {
     await this.playersService.activateCyberInvestmentProgramme(playerId)
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    const immunePlayer = await this.playersService.getPlayerById(playerId)
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Cyber Investment Programme asset. ${
+        entityNameMap[immunePlayer.side][immunePlayer.type]
+      } now regenerates <span id="vitality">Vitality</span> at 1 less <span id="resource">Resource</span> cost than normal.</p>`
+    )
   }
 
   // Ransomware
-  async activateRansomware(playerId: string): Promise<void> {
+  async activateRansomware(gameId: string, assetId: string, playerId: string): Promise<void> {
     await this.playersService.activateRansomware(playerId)
+
+    // Log
+    const asset = await this.assetsService.getAssetById(assetId)
+    const activatingSide = asset.blueTeamBid > asset.redTeamBid ? 'UK' : 'Russia'
+    const immunePlayer = await this.playersService.getPlayerById(playerId)
+    await this.addNewRecord(
+      gameId,
+      `<p><span id="asset">[ASSET]</span> ${activatingSide} activates Ransomware asset. Next successful direct attack from ${
+        entityNameMap[immunePlayer.side][immunePlayer.type]
+      } infects the target with ransomware</p>`
+    )
   }
 
   async setAssetActivated(assetId: string): Promise<void> {
     await this.assetsService.setAssetStatus(assetId, AssetStatus.Activated)
   }
 
-  async payRansomwareAttacker(attackerId: string, victimId: string, yes: boolean): Promise<void> {
+  async payRansomwareAttacker(gameId: string, attackerId: string, victimId: string, yes: boolean): Promise<void> {
+    const victim = await this.playersService.getPlayerById(victimId)
+    const attacker = await this.playersService.getPlayerById(attackerId)
+
+    let log = `${entityNameMap[victim.side][victim.type]}`
+
     if (yes) {
       // Pay 2 resource
       await this.playersService.sendResources(victimId, attackerId, 2)
 
       // Unparalyze
       await this.playersService.unparalyze(victimId)
+
+      log += ` pays <span id="resource">2 resource</span> to ${
+        entityNameMap[attacker.side][attacker.type]
+      } and is no longer paralyzed.`
     }
     // Else, keep resource and stay paralyzed
+    else {
+      log += ` refuses to pay <span id="resource">2 resource</span> to ${
+        entityNameMap[attacker.side][attacker.type]
+      } and stays paralyzed for 2 turns.`
+    }
 
     // Reset flag
     await this.playersService.setWasRansomwareAttacked(victimId, false)
+
+    await this.addNewRecord(gameId, `<p><span id="ransomware">[RANSOMWARE]</span> ${log}</p>`)
   }
 
   async readEventCard(gameId: string, teamSide: TeamSide): Promise<void> {
