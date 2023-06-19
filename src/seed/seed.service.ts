@@ -12,7 +12,10 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    if (await this.isDatabaseEmpty()) {
+    const isSeedEnv = !!Number(process.env.SEED_DB)
+    const isDatabaseEmpty = await this.isDatabaseEmpty()
+
+    if (isSeedEnv && isDatabaseEmpty) {
       const blueUserId = await this.authService.signUp({
         username: 'Physx',
         password: 'hesoyam',
