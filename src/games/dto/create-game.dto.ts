@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength } from 'class-validator'
+import { IsNumber, IsOptional, IsPositive, IsString, MinLength } from 'class-validator'
 
 const teamNameRequirement = 'Team name is required.'
 const playerEntityAssignmentRequirement = 'A player must be assigned to every Entity.'
@@ -53,6 +53,11 @@ export class CreateGameDto {
   @IsString()
   @MinLength(1, { message: playerEntityAssignmentRequirement })
   scsUserId: string
+
+  // In minutes
+  @IsNumber()
+  @IsPositive()
+  timeLimit: number
 
   // Description
   @IsString()

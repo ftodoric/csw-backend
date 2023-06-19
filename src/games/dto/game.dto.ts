@@ -14,4 +14,6 @@ export interface GameDto {
   activeSide: TeamSide
   activePeriod: GamePeriod
   drawnEventCard: EventCardName
+  // In seconds
+  timeLimit: number
 }

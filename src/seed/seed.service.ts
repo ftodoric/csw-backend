@@ -47,6 +47,9 @@ export class SeedService implements OnApplicationBootstrap {
         russianGovernmentUserId: redUserId,
         rosenergoatomUserId: redUserId,
         scsUserId: redUserId,
+
+        timeLimit: 10,
+
         description: 'This is War for Cybertron.',
       },
       owner

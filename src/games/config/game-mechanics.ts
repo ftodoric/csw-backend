@@ -4,8 +4,6 @@ import { Player } from '@players/entities'
 import { PlayerType } from '@players/interface'
 import { TeamSide } from '@teams/interface'
 
-export const TURN_TIME = 60 * 10
-
 export const INITIAL_RESOURCE = 3
 export const INITIAL_VITALITY = 4
 

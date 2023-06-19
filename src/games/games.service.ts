@@ -18,7 +18,6 @@ import { assets } from './config/assets'
 import {
   GOVERNMENT_NEW_TURN_RESOURCE_ADDITION,
   INITIAL_VITALITY,
-  TURN_TIME,
   attackSplashMap,
   attackTargetMap,
   combatResolutionTable,
@@ -157,10 +156,11 @@ export class GamesService {
       redTeam: redTeam,
       status: GameStatus.NotStarted,
       description: gameDto.description,
-      turnsRemainingTime: TURN_TIME,
+      turnsRemainingTime: gameDto.timeLimit * 60,
       activeSide: TeamSide.Red,
       activePeriod: GamePeriod.January,
       drawnEventCard: EventCardName[cards[random]],
+      timeLimit: gameDto.timeLimit * 60,
     })
 
     cards.forEach(async (card, i) => {
@@ -318,7 +318,7 @@ export class GamesService {
       await this.gamesRepository.save({
         id: game.id,
         // Reset and checkpoint the time
-        turnsRemainingTime: TURN_TIME,
+        turnsRemainingTime: game.timeLimit,
         // Change actives
         activeSide: nextSide,
         activePeriod: nextPeriod,

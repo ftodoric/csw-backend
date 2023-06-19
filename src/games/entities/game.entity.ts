@@ -22,6 +22,9 @@ export class Game {
   outcome: GameOutcome
 
   @Column()
+  timeLimit: number
+
+  @Column()
   turnsRemainingTime: number
 
   @Column()
